@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 04 · Self-Improving Triage — human_feedback + memory</title>
+
+<!-- Fonts: Cabinet Grotesk (display) + General Sans (body) from Fontshare, JetBrains Mono (code) from Google -->
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=general-sans@400,500,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&display=swap">
+
+<style>
+/* ===========================================
+   THEME — "Warm Terminal"
+   Deep coal background warmed toward CrewAI's
+   orange. Change these variables to retheme.
+   =========================================== */
+:root {
+    --bg-primary: #120e0b;          /* warm near-black */
+    --bg-panel: #1c1611;            /* raised panels / code windows */
+    --bg-chip: #241c15;             /* small chips and tags */
+    --line: rgba(255, 149, 97, 0.14);
+    --text-primary: #f5ede4;
+    --text-secondary: #a4988a;
+    --accent: #ff5a50;              /* CrewAI orange-red */
+    --accent-soft: #ff8a5c;
+    --amber: #ffb454;               /* decorators, highlights */
+    --green: #9ece6a;               /* strings, success */
+    --accent-glow: rgba(255, 90, 80, 0.35);
+
+    --font-display: 'Cabinet Grotesk', sans-serif;
+    --font-body: 'General Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Typography — clamp() everywhere so slides scale */
+    --title-size: clamp(2.2rem, 7vw, 5.5rem);
+    --h2-size: clamp(1.4rem, 3.6vw, 2.6rem);
+    --body-size: clamp(0.8rem, 1.4vw, 1.05rem);
+    --code-size: clamp(0.62rem, 1.25vw, 0.95rem);
+    --small-size: clamp(0.65rem, 1vw, 0.875rem);
+
+    --slide-padding: clamp(1.25rem, 4.5vw, 4.5rem);
+    --content-gap: clamp(0.6rem, 2vw, 1.6rem);
+    --element-gap: clamp(0.25rem, 1vw, 1rem);
+
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-normal: 0.7s;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: var(--body-size);
+}
+::selection { background: var(--accent); color: var(--bg-primary); }
+
+/* ===========================================
+   VIEWPORT FITTING: MANDATORY BASE STYLES
+   (viewport-base.css — do not remove)
+   =========================================== */
+html, body { height: 100%; overflow-x: hidden; }
+html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+
+.slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-height: 100%;
+    overflow: hidden;
+    padding: var(--slide-padding);
+}
+.card, .container, .content-box { max-width: min(90vw, 1000px); max-height: min(80vh, 700px); }
+.feature-list, .bullet-list { gap: clamp(0.4rem, 1vh, 1rem); }
+.feature-list li, .bullet-list li { font-size: var(--body-size); line-height: 1.4; }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+}
+img, .image-container { max-width: 100%; max-height: min(50vh, 400px); object-fit: contain; }
+
+@media (max-height: 700px) {
+    :root {
+        --slide-padding: clamp(0.75rem, 3vw, 2rem);
+        --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+        --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
+        --h2-size: clamp(1rem, 3vw, 1.75rem);
+    }
+}
+@media (max-height: 600px) {
+    :root {
+        --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+        --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+        --title-size: clamp(1.1rem, 4vw, 2rem);
+        --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+    }
+    .nav-dots, .keyboard-hint, .decorative { display: none; }
+}
+@media (max-height: 500px) {
+    :root {
+        --slide-padding: clamp(0.4rem, 2vw, 1rem);
+        --title-size: clamp(1rem, 3.5vw, 1.5rem);
+        --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+        --body-size: clamp(0.65rem, 1vw, 0.85rem);
+    }
+}
+@media (max-width: 600px) {
+    :root { --title-size: clamp(1.25rem, 7vw, 2.5rem); }
+    .grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+    html { scroll-behavior: auto; }
+}
+/* ============ end viewport-base.css ============ */
+
+/* ===========================================
+   BACKGROUND ATMOSPHERE
+   Faint blueprint grid + one warm glow per slide.
+   =========================================== */
+.slide::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 40%, black 0%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 0%, transparent 78%);
+    pointer-events: none;
+}
+.slide::after {
+    content: "";
+    position: absolute;
+    width: 60vw; height: 60vw;
+    max-width: 800px; max-height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 90, 80, 0.10) 0%, transparent 65%);
+    top: -20vh; right: -15vw;
+    pointer-events: none;
+}
+.slide:nth-child(even)::after { top: auto; right: auto; bottom: -20vh; left: -15vw; }
+
+/* ===========================================
+   TYPOGRAPHY
+   =========================================== */
+h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--title-size);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+}
+h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--h2-size);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+}
+p, li { color: var(--text-secondary); line-height: 1.5; }
+strong { color: var(--text-primary); font-weight: 600; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+
+/* Kicker: small mono label above each slide title, styled like a prompt */
+.kicker {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--accent-soft);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: clamp(0.4rem, 1.2vh, 0.9rem);
+}
+.kicker::before { content: "❯ "; color: var(--accent); }
+
+/* Slide index in the corner, like an editor line number */
+.slide-num {
+    position: absolute;
+    top: clamp(0.8rem, 2.5vh, 1.8rem);
+    right: var(--slide-padding);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    opacity: 0.55;
+    z-index: 2;
+}
+
+/* ===========================================
+   COMPONENTS
+   =========================================== */
+
+/* Terminal-window code blocks with traffic lights */
+.code-window {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    max-width: min(92vw, 880px);
+}
+.code-titlebar {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: clamp(0.4rem, 1vh, 0.65rem) clamp(0.7rem, 1.5vw, 1rem);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+.code-titlebar span:last-child { margin-left: 0.4rem; }
+pre {
+    padding: clamp(0.6rem, 1.6vh, 1.1rem) clamp(0.8rem, 1.8vw, 1.3rem);
+    font-family: var(--font-mono);
+    font-size: var(--code-size);
+    line-height: 1.55;
+    overflow-x: auto;
+    color: var(--text-primary);
+}
+/* Minimal hand-rolled highlighting */
+.kw { color: var(--accent-soft); }          /* keywords */
+.dec { color: var(--amber); font-weight: 600; } /* decorators */
+.str { color: var(--green); }               /* strings */
+.cm { color: #6f6357; font-style: italic; } /* comments */
+.fn { color: #7dcfff; }                     /* function / class names */
+
+/* Concept cards (anatomy grid) */
+.card {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: clamp(0.7rem, 1.8vw, 1.3rem);
+    transition: transform 0.3s var(--ease-out-expo), border-color 0.3s;
+}
+.card:hover { transform: translateY(-4px); border-color: var(--accent); }
+.card .mono-tag {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--amber);
+    font-size: clamp(0.75rem, 1.6vw, 1.1rem);
+    display: block;
+    margin-bottom: clamp(0.2rem, 0.6vh, 0.45rem);
+}
+.card p { font-size: var(--small-size); }
+
+/* Chips: inline mono tokens (@router, or_, commands) */
+.chip {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--amber);
+    background: var(--bg-chip);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.15em 0.55em;
+    white-space: nowrap;
+}
+
+/* Pipeline diagram: step boxes joined by arrows */
+.pipeline {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: clamp(0.3rem, 0.9vw, 0.7rem);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+}
+.pipe-step {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: clamp(0.35rem, 1vh, 0.6rem) clamp(0.55rem, 1.4vw, 0.95rem);
+    color: var(--text-primary);
+}
+.pipe-step small { display: block; color: var(--amber); font-size: 0.82em; }
+.pipe-arrow { color: var(--accent); font-weight: 600; }
+
+/* ===========================================
+   FLOW DIAGRAM — vertical use-case graph
+   (anatomy slide): nodes, connectors, fan-out
+   to queue labels, fan-in to the Agent step.
+   =========================================== */
+.flow-diagram {
+    display: flex; flex-direction: column; align-items: center;
+    font-family: var(--font-mono);
+    font-size: calc(var(--small-size) * 0.95);
+    width: 100%; max-width: 420px; margin: 0 auto;
+}
+.fd-node {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: clamp(0.3rem, 0.9vh, 0.55rem) clamp(0.6rem, 1.4vw, 1rem);
+    color: var(--text-primary);
+    text-align: center;
+    position: relative;
+}
+.fd-node small { display: block; color: var(--amber); font-size: 0.8em; }
+.fd-node.fd-hot { border-color: var(--accent); box-shadow: 0 0 16px rgba(255, 90, 80, 0.18); }
+.fd-badge {
+    position: absolute; top: -0.75em; right: -0.6em;
+    background: var(--bg-chip);
+    border: 1px solid var(--amber); color: var(--amber);
+    border-radius: 999px;
+    font-size: 0.68em; padding: 0.12em 0.6em;
+    white-space: nowrap;
+}
+.fd-badge.fd-llm { border-color: var(--accent); color: var(--accent-soft); box-shadow: 0 0 10px var(--accent-glow); }
+.fd-vline {
+    width: 2px; height: clamp(16px, 3.6vh, 38px);
+    background: linear-gradient(var(--accent), var(--accent-soft));
+    opacity: 0.55;
+}
+.fd-fan { width: min(100%, 340px); height: clamp(22px, 4.8vh, 46px); display: block; flex: none; margin: clamp(3px, 0.6vh, 7px) 0; }
+.fd-fan path { stroke: rgba(255, 90, 80, 0.5); stroke-width: 1.5; fill: none; }
+.fd-chiprow { display: flex; gap: clamp(0.3rem, 0.8vw, 0.6rem); }
+.fd-chiprow .chip { font-size: 0.78em; }
+@media (max-height: 700px) { .flow-diagram { font-size: 0.7rem; } }
+
+/* Two-column layout: code beside talking points */
+.split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: var(--content-gap);
+    align-items: center;
+    max-width: min(94vw, 1200px);
+}
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; } .split .side-notes, .split .flow-diagram { display: none; } }
+
+.bullet-list { list-style: none; display: flex; flex-direction: column; }
+.bullet-list li { padding-left: 1.4em; position: relative; }
+.bullet-list li::before {
+    content: "▸"; position: absolute; left: 0; color: var(--accent);
+    font-family: var(--font-mono);
+}
+
+/* ===========================================
+   REVEAL ANIMATIONS (staggered per slide)
+   =========================================== */
+.reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity var(--duration-normal) var(--ease-out-expo),
+                transform var(--duration-normal) var(--ease-out-expo);
+}
+.slide.visible .reveal { opacity: 1; transform: translateY(0); }
+.reveal:nth-child(1) { transition-delay: 0.05s; }
+.reveal:nth-child(2) { transition-delay: 0.15s; }
+.reveal:nth-child(3) { transition-delay: 0.25s; }
+.reveal:nth-child(4) { transition-delay: 0.35s; }
+.reveal:nth-child(5) { transition-delay: 0.45s; }
+.reveal:nth-child(6) { transition-delay: 0.55s; }
+
+/* Blinking cursor on the title slide */
+.cursor {
+    display: inline-block; width: 0.55em; height: 0.95em;
+    background: var(--accent); margin-left: 0.12em;
+    vertical-align: baseline;
+    animation: blink 1.1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ===========================================
+   CHROME: progress bar, nav dots, hint
+   =========================================== */
+.progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--amber));
+    z-index: 9000;
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+.nav-dots {
+    position: fixed; right: clamp(0.6rem, 1.5vw, 1.4rem); top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 0.6rem;
+    z-index: 9000;
+}
+.nav-dots button {
+    width: 9px; height: 9px; border-radius: 50%;
+    border: 1px solid var(--text-secondary);
+    background: transparent; cursor: pointer; padding: 0;
+    transition: background 0.25s, transform 0.25s, border-color 0.25s;
+}
+.nav-dots button.active {
+    background: var(--accent); border-color: var(--accent);
+    transform: scale(1.35);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+.keyboard-hint {
+    position: fixed; bottom: clamp(0.6rem, 2vh, 1.2rem); left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono); font-size: var(--small-size);
+    color: var(--text-secondary); opacity: 0.5; z-index: 9000;
+    pointer-events: none;
+}
+
+/* ===========================================
+   INLINE EDITING (opt-in) — hover top-left or
+   press E; changes autosave to localStorage.
+   =========================================== */
+.edit-hotzone { position: fixed; top: 0; left: 0; width: 80px; height: 80px; z-index: 10000; cursor: pointer; }
+.edit-toggle {
+    position: fixed; top: 14px; left: 14px; z-index: 10001;
+    opacity: 0; pointer-events: none;
+    background: var(--bg-panel); color: var(--text-primary);
+    border: 1px solid var(--line); border-radius: 8px;
+    font-size: 1rem; padding: 0.35rem 0.55rem; cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+.edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
+.edit-toggle.active { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+.edit-badge {
+    position: fixed; top: 14px; left: 60px; z-index: 10001;
+    display: none; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: var(--small-size);
+    background: var(--bg-panel); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 0.35rem 0.7rem; color: var(--amber);
+}
+.edit-badge.show { display: flex; }
+.edit-badge button {
+    font-family: inherit; font-size: inherit;
+    background: var(--accent); color: var(--bg-primary);
+    border: none; border-radius: 5px; padding: 0.15rem 0.5rem; cursor: pointer;
+}
+body.editing [data-ed] {
+    outline: 1px dashed rgba(255, 180, 84, 0.6);
+    outline-offset: 3px; border-radius: 3px; cursor: text;
+}
+body.editing [data-ed]:focus { outline: 2px solid var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"></div>
+<nav class="nav-dots" aria-label="Slide navigation"></nav>
+<div class="keyboard-hint">← → navigate · E edit</div>
+
+<!-- Inline editing controls -->
+<div class="edit-hotzone" title="Edit mode"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)">✏️</button>
+<div class="edit-badge" id="editBadge">
+    <span>editing — autosaves</span>
+    <button id="exportBtn" title="Download edited HTML">export</button>
+    <button id="resetBtn" title="Discard saved edits">reset</button>
+</div>
+
+<!-- ================= SLIDE 1 · TITLE ================= -->
+<section class="slide">
+    <div class="slide-content" style="align-items: flex-start;">
+        <p class="kicker reveal" data-ed>module 04 · crewai workshop</p>
+        <h1 class="reveal" data-ed>Self-Improving<br>Triage<span class="cursor"></span></h1>
+        <p class="reveal" data-ed style="margin-top: var(--content-gap); max-width: 34em;">
+            TriageX again — but now it <strong>learns</strong>. Two features carry the
+            module: <strong>@human_feedback</strong> verifies urgency before anything
+            publishes, and <strong>memory</strong> turns each verdict into precedent.
+        </p>
+        <div class="pipeline reveal" style="margin-top: var(--content-gap);">
+            <span class="pipe-step">propose</span><span class="pipe-arrow">─▶</span>
+            <span class="pipe-step">human verifies</span><span class="pipe-arrow">─▶</span>
+            <span class="pipe-step">remember</span><span class="pipe-arrow">─▶</span>
+            <span class="pipe-step">better proposals</span>
+        </div>
+    </div>
+    <span class="slide-num">01 / 08</span>
+</section>
+
+<!-- ================= SLIDE 2 · THE LOOP ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>the loop</p>
+        <h2 class="reveal" data-ed>Each layer only <span class="accent">proposes</span> to the next</h2>
+        <div class="split" style="margin-top: var(--content-gap); align-items: center; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);">
+            <div class="grid reveal" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <div class="card" data-ed>
+                    <span class="mono-tag">propose</span>
+                    <p><strong>Code.</strong> Labels OR recalled precedent flag an item as urgent — a strict majority of past verdicts required.</p>
+                </div>
+                <div class="card" data-ed>
+                    <span class="mono-tag">confirm</span>
+                    <p><strong>Person.</strong> <code class="chip">@human_feedback</code> shows every proposal with its precedent; default outcome is <code class="chip">rejected</code>.</p>
+                </div>
+                <div class="card" data-ed>
+                    <span class="mono-tag">remember</span>
+                    <p><strong>Both verdicts.</strong> Approvals store <code class="chip">urgent</code>; holds store <code class="chip">not_urgent</code> — the flow learns from "no" too.</p>
+                </div>
+                <div class="card" data-ed>
+                    <span class="mono-tag">publish</span>
+                    <p><strong>Opt-in.</strong> Linear needs the human's approval AND <code class="chip">--sync-linear</code> — double-gated.</p>
+                </div>
+            </div>
+            <div class="flow-diagram reveal" role="img" aria-label="The learning loop: triage proposes urgency from labels or recalled precedent, a human feedback gate confirms or holds, both verdicts are remembered, and only approved items may publish">
+                <div class="fd-node fd-hot" data-ed><small>triage_range</small>urgency proposal<span class="fd-badge">label · or recall()</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node" data-ed><small>@human_feedback</small>review_urgent<span class="fd-badge fd-llm">human verifies ⏸</span></div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 90,10 90,26"/>
+                    <path d="M170,0 C170,14 250,10 250,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">approved</span>
+                    <span class="chip">rejected</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M90,0 L90,26"/>
+                    <path d="M250,0 L250,26"/>
+                </svg>
+                <div style="display: flex; gap: clamp(0.5rem, 1.4vw, 1rem); justify-content: center; width: 100%;">
+                    <div class="fd-node" data-ed><small>remember(urgent)</small>→ publish · opt-in</div>
+                    <div class="fd-node" data-ed><small>remember(not_urgent)</small>→ nothing publishes</div>
+                </div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>both verdicts feed the next run's recall() ↻</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">02 / 08</span>
+</section>
+
+<!-- ================= SLIDE 3 · @HUMAN_FEEDBACK ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>verify — @human_feedback</p>
+        <h2 class="reveal" data-ed>A person confirms <span class="amber">before</span> anything publishes</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>triagex_flow_imp · review_urgent</span></div>
+<pre data-ed><span class="dec">@listen</span>(<span class="str">"REVIEW_URGENT"</span>)   <span class="cm"># router: only when proposals exist</span>
+<span class="dec">@human_feedback</span>(
+    message=<span class="str">"Verify urgency before Linear publish…"</span>,
+    emit=[<span class="str">"approved"</span>, <span class="str">"rejected"</span>],
+    llm=LAB_MODEL,
+    default_outcome=<span class="str">"rejected"</span>,   <span class="cm"># unsure → safe path</span>
+)
+<span class="kw">def</span> <span class="fn">review_urgent</span>(self) -&gt; <span class="kw">str</span>:
+    <span class="cm"># each proposal, its signal, and the recalled precedent</span>
+    <span class="kw">return</span> proposals_with_precedents()</pre>
+            </div>
+            <div class="flow-diagram reveal" role="img" aria-label="Human feedback diagram: the flow pauses and shows proposals with past verdicts; the reviewer replies in plain language, an LLM maps the reply onto approved or rejected, and the matching handler receives the reviewer's note">
+                <div class="fd-node" data-ed><small>flow pauses ⏸</small>proposals + past verdicts</div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>reviewer replies, freeform</small>"ship 6611, rest can wait"<span class="fd-badge fd-llm">LLM maps → emit label</span></div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 90,10 90,26"/>
+                    <path d="M170,0 C170,14 250,10 250,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">approved</span>
+                    <span class="chip">rejected · default</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M90,0 C90,16 170,12 170,26"/>
+                    <path d="M250,0 C250,16 170,12 170,26"/>
+                </svg>
+                <div class="fd-node" data-ed><small>@listen("label") receives</small>HumanFeedbackResult · note kept</div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>no proposals → router skips the human entirely</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">03 / 08</span>
+</section>
+
+<!-- ================= SLIDE 4 · HOW MEMORY WORKS ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>under the hood · crewai cognitive memory</p>
+        <h2 class="reveal" data-ed>Memory is <span class="accent">cognition</span>, not storage</h2>
+        <div class="grid reveal" style="grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: min(94vw, 1100px); margin-top: var(--content-gap);">
+            <div class="card" data-ed>
+                <span class="mono-tag">encode</span>
+                <p>Every memory gets a <code class="chip">scope</code> (a place in the tree), <code class="chip">categories</code>, and an <code class="chip">importance</code> (0–1). Structure emerges — no schema up front.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">consolidate</span>
+                <p>New facts are checked against existing ones. Contradictions <strong>update</strong> old records instead of piling up beside them.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">recall</span>
+                <p>Composite scoring — <strong>similarity + recency + importance</strong> — so what <em>matters</em> outranks what merely matches. Uncertain recalls dig deeper and report <code class="chip">evidence_gaps</code>.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">extract</span>
+                <p><code class="chip">extract_memories()</code> splits raw text into atomic, self-contained facts — each consolidated independently.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">forget</span>
+                <p>Active, on purpose: temporal decay (e.g. older than 30 days) keeps stale facts from poisoning new runs.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">it's flows all the way down</span>
+                <p>Encode and recall are themselves <strong>CrewAI Flows</strong> — each operation is a reasoning process, not a read or write.</p>
+            </div>
+        </div>
+        <div class="pipeline reveal" data-ed style="margin-top: var(--content-gap); align-items: baseline;">
+            <span style="font-family: var(--font-mono); font-size: var(--small-size); color: var(--accent-soft);">recall score ❯</span>
+            <span class="chip">similarity × w</span>
+            <span class="chip">+ recency × w</span>
+            <span class="chip">+ importance × w</span>
+            <span style="font-family: var(--font-mono); font-size: var(--small-size); color: var(--text-secondary);">· crewai.com/blog — cognitive memory for agentic systems</span>
+        </div>
+    </div>
+    <span class="slide-num">04 / 08</span>
+</section>
+
+<!-- ================= SLIDE 5 · MEMORY WRITE ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>learn — self.remember</p>
+        <h2 class="reveal" data-ed>The verdict becomes <span class="amber">scoped memory</span></h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>_remember_verdicts — runs for BOTH outcomes</span></div>
+<pre data-ed>self.remember(
+    candidate.title,               <span class="cm"># what recall() will match on</span>
+    scope=<span class="str">"/triage/crewaiinc-crewai/urgency"</span>,
+    categories=[<span class="str">"triage-urgency"</span>, verdict],
+    metadata={
+        <span class="str">"verdict"</span>: verdict,        <span class="cm"># "urgent" | "not_urgent"</span>
+        <span class="str">"number"</span>: candidate.number,
+        <span class="str">"reviewer_note"</span>: self.state.reviewer_note,
+    },
+    importance=<span class="amber">0.8</span>,
+)</pre>
+            </div>
+            <div class="flow-diagram reveal" role="img" aria-label="Memory write diagram: the human verdict flows into remember, which stores the item title under a repository-scoped path with categories, metadata, and importance, into local durable storage">
+                <div class="fd-node" data-ed><small>human verdict</small>approved · or held</div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>self.remember(title, …)</small>one memory per item<span class="fd-badge">durable · cross-run</span></div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 55,10 55,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M170,0 C170,14 285,10 285,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">scope</span>
+                    <span class="chip">categories</span>
+                    <span class="chip">metadata · importance</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M55,0 C55,16 170,12 170,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M285,0 C285,16 170,12 170,26"/>
+                </svg>
+                <div class="fd-node" data-ed><small>CREWAI_STORAGE_DIR</small>./storage — delete to reset</div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>scope per repo — same isolation idea as the MCP allowlists</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">05 / 08</span>
+</section>
+
+<!-- ================= SLIDE 5 · MEMORY READ ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>reuse — self.recall</p>
+        <h2 class="reveal" data-ed>Precedent <span class="accent">proposes</span>, it never decides</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>triage_range — for unlabeled accepted items</span></div>
+<pre data-ed>matches = self.recall(
+    candidate.title,              <span class="cm"># semantic similarity</span>
+    scope=<span class="str">"/triage/crewaiinc-crewai/urgency"</span>,
+    categories=[<span class="str">"triage-urgency"</span>],
+    limit=<span class="amber">3</span>, depth=<span class="str">"shallow"</span>,
+)
+<span class="kw">if</span> precedent_says_urgent(matches):  <span class="cm"># strict majority, in code</span>
+    self.state.urgent.append(candidate.number)
+    self.state.learned_urgent.append(candidate.number)</pre>
+            </div>
+            <div class="flow-diagram reveal" role="img" aria-label="Memory read diagram: a new unlabeled item's title queries recall within the repository scope; the returned past verdicts are counted in code, and only a strict majority of urgent votes creates a proposal — which still goes to the human">
+                <div class="fd-node" data-ed><small>new item · no label</small>"Async tools not awaited…"</div>
+                <div class="fd-vline"></div>
+                <div class="fd-node" data-ed><small>self.recall(title, scope=…)</small>similar past items</div>
+                <div class="fd-vline"></div>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">urgent</span>
+                    <span class="chip">urgent</span>
+                    <span class="chip">not_urgent</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M55,0 C55,16 170,12 170,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M285,0 C285,16 170,12 170,26"/>
+                </svg>
+                <div class="fd-node fd-hot" data-ed><small>precedent_says_urgent()</small>2 &gt; 1 → propose<span class="fd-badge">strict majority · code</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node" data-ed><small>still goes to</small>the human gate</div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>tie or empty → no proposal · memory is context, not authority</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">06 / 08</span>
+</section>
+
+<!-- ================= SLIDE 6 · GUARDRAILS ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>why this stays safe</p>
+        <h2 class="reveal" data-ed>Memory proposes. <span class="accent">Humans dispose.</span></h2>
+        <ul class="bullet-list reveal" data-ed style="margin-top: var(--content-gap); max-width: 44em;">
+            <li><strong>Strict majority required</strong> — a tie or an empty recall proposes nothing.</li>
+            <li><strong>Default is reject</strong> — an unmappable reviewer reply holds everything.</li>
+            <li><strong>Double-gated publish</strong> — Linear needs the human's approval AND the explicit sync opt-in.</li>
+            <li><strong>Holds are learning too</strong> — <code class="chip">not_urgent</code> verdicts stop the same false proposal from returning.</li>
+            <li><strong>Degrades gracefully</strong> — no embeddings key? recall/remember are skipped and the flow runs on labels alone.</li>
+        </ul>
+        <p class="reveal" data-ed style="margin-top: var(--content-gap); font-family: var(--font-mono); font-size: var(--small-size); color: var(--accent-soft);">
+            Spend human judgment once — then reuse it. Never let memory skip the human.
+        </p>
+    </div>
+    <span class="slide-num">07 / 08</span>
+</section>
+
+<!-- ================= SLIDE 7 · SEE IT LEARN ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>demo — see it learn</p>
+        <h2 class="reveal" data-ed>Run twice. Watch <span class="amber">(N learned)</span> appear.</h2>
+        <ul class="bullet-list reveal" data-ed style="margin-top: var(--content-gap); max-width: 44em;">
+            <li><strong>Run 1</strong> — proposals come from labels only; give your verdict; the summary prints how many were remembered.</li>
+            <li><strong>Run 2</strong> (overlapping window) — the triage summary shows <code class="chip">(N learned)</code>, and the review screen cites <code class="chip">past verdict · …</code> — your own earlier decision, recalled.</li>
+            <li><strong>Reset</strong> — delete <code class="chip">./storage</code> and the flow forgets everything.</li>
+        </ul>
+        <div class="card reveal" data-ed style="margin-top: var(--content-gap); max-width: 44em; border-color: var(--accent);">
+            <span class="mono-tag">live demo</span>
+            <p><code class="chip">cd modules/04-triagex-flow-imp/triagex_flow_imp &amp;&amp; crewai install &amp;&amp; crewai run</code><br>
+            Reply to the review gate in plain language — "approve", "hold these" — the LLM maps it onto the emit labels.</p>
+        </div>
+    </div>
+    <span class="slide-num">08 / 08</span>
+</section>
+
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   Keyboard, touch, dots, progress, reveals.
+   =========================================== */
+class SlidePresentation {
+    constructor() {
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.current = 0;
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupProgressBar();
+        this.setupNavDots();
+    }
+
+    /* Adds .visible when a slide enters view → triggers .reveal transitions */
+    setupIntersectionObserver() {
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    this.current = this.slides.indexOf(entry.target);
+                    this.updateDots();
+                }
+            });
+        }, { threshold: 0.55 });
+        this.slides.forEach((s) => io.observe(s));
+    }
+
+    goTo(i) {
+        const idx = Math.max(0, Math.min(this.slides.length - 1, i));
+        this.slides[idx].scrollIntoView({ behavior: 'smooth' });
+    }
+
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+            if (['ArrowDown', 'ArrowRight', ' ', 'PageDown'].includes(e.key)) {
+                e.preventDefault(); this.goTo(this.current + 1);
+            } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
+                e.preventDefault(); this.goTo(this.current - 1);
+            } else if (e.key === 'Home') { this.goTo(0); }
+            else if (e.key === 'End') { this.goTo(this.slides.length - 1); }
+        });
+    }
+
+    setupTouchNav() {
+        let startY = null;
+        document.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: true });
+        document.addEventListener('touchend', (e) => {
+            if (startY === null) return;
+            const dy = startY - e.changedTouches[0].clientY;
+            if (Math.abs(dy) > 60) this.goTo(this.current + (dy > 0 ? 1 : -1));
+            startY = null;
+        }, { passive: true });
+    }
+
+    setupProgressBar() {
+        const bar = document.querySelector('.progress-bar');
+        document.addEventListener('scroll', () => {
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            bar.style.width = `${(window.scrollY / max) * 100}%`;
+        }, { passive: true });
+    }
+
+    setupNavDots() {
+        const nav = document.querySelector('.nav-dots');
+        this.dots = this.slides.map((_, i) => {
+            const b = document.createElement('button');
+            b.setAttribute('aria-label', `Go to slide ${i + 1}`);
+            b.addEventListener('click', () => this.goTo(i));
+            nav.appendChild(b);
+            return b;
+        });
+        this.updateDots();
+    }
+
+    updateDots() {
+        if (!this.dots) return;
+        this.dots.forEach((d, i) => d.classList.toggle('active', i === this.current));
+    }
+}
+
+/* ===========================================
+   INLINE EDITOR (opt-in)
+   Click ✏️ (hover top-left) or press E.
+   Edits autosave to localStorage; export
+   downloads a standalone edited copy.
+   =========================================== */
+class InlineEditor {
+    constructor() {
+        this.KEY = 'deck-triagex-imp-v2'; /* module 04 deck */
+        this.isActive = false;
+        this.editables = Array.from(document.querySelectorAll('[data-ed]'));
+        this.editables.forEach((el, i) => el.dataset.edId = i);
+        this.restore();
+        this.bindControls();
+    }
+
+    restore() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(this.KEY) || '{}');
+            this.editables.forEach((el) => {
+                if (saved[el.dataset.edId] !== undefined) el.innerHTML = saved[el.dataset.edId];
+            });
+        } catch { /* corrupt save — ignore */ }
+    }
+
+    save() {
+        const out = {};
+        this.editables.forEach((el) => { out[el.dataset.edId] = el.innerHTML; });
+        localStorage.setItem(this.KEY, JSON.stringify(out));
+    }
+
+    toggleEditMode() {
+        this.isActive = !this.isActive;
+        document.body.classList.toggle('editing', this.isActive);
+        document.getElementById('editToggle').classList.toggle('active', this.isActive);
+        document.getElementById('editBadge').classList.toggle('show', this.isActive);
+        this.editables.forEach((el) => {
+            if (this.isActive) el.setAttribute('contenteditable', 'true');
+            else el.removeAttribute('contenteditable');
+        });
+        if (!this.isActive) this.save();
+    }
+
+    export() {
+        this.save();
+        const clone = document.documentElement.cloneNode(true);
+        clone.querySelectorAll('[contenteditable]').forEach((el) => el.removeAttribute('contenteditable'));
+        clone.querySelector('body').classList.remove('editing');
+        const blob = new Blob(['<!DOCTYPE html>\n' + clone.outerHTML], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'triagex-imp-deck.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    reset() {
+        localStorage.removeItem(this.KEY);
+        location.reload();
+    }
+
+    bindControls() {
+        const toggle = document.getElementById('editToggle');
+        const hotzone = document.querySelector('.edit-hotzone');
+        let hideTimeout = null;
+
+        toggle.addEventListener('click', () => this.toggleEditMode());
+        hotzone.addEventListener('click', () => this.toggleEditMode());
+
+        /* JS-driven hover with 400ms grace so the button stays reachable */
+        const scheduleHide = () => {
+            hideTimeout = setTimeout(() => {
+                if (!this.isActive) toggle.classList.remove('show');
+            }, 400);
+        };
+        hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); toggle.classList.add('show'); });
+        hotzone.addEventListener('mouseleave', scheduleHide);
+        toggle.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+        toggle.addEventListener('mouseleave', scheduleHide);
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'e' || e.key === 'E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable'))) {
+                this.toggleEditMode();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && this.isActive) {
+                e.preventDefault(); this.save();
+            }
+        });
+
+        /* Debounced autosave while typing */
+        let t = null;
+        document.addEventListener('input', (e) => {
+            if (!e.target.closest || !e.target.closest('[data-ed]')) return;
+            clearTimeout(t); t = setTimeout(() => this.save(), 600);
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => this.export());
+        document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+    }
+}
+
+const presentation = new SlidePresentation();
+const editor = new InlineEditor();
+</script>
+</body>
+</html>

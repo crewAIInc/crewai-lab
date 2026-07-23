@@ -11,18 +11,23 @@ the profile's **permissions** decide which routes each turn may take:
 
 ## Learning objective
 
-Intelligent routing is two separable decisions, and both belong in code:
+Intelligent routing is two separable decisions — and only one of them may
+be delegated to a model:
 
-1. **Intent** — what does this turn ask for? (`route_for` keyword matching)
-2. **Authorization** — may this profile do that? (permission set lookup)
+1. **Intent** — what does this turn ask for? Delegated to the LLM router
+   (`RouterConfig`): the catalog is built from each handler's docstring, and
+   `route_turn()` does session setup then `super().route_turn(context)` —
+   every turn routes via the catalog, including profile questions and
+   goodbyes. (Returning `None` would NOT delegate: it means converse.)
+2. **Authorization** — may this profile do that? Code, always: every handler
+   checks its permission on entry and falls back to the deterministic denial.
 
 ```text
 session start → load profile (like a @start step) → permissions
-each turn     → route_turn()
-                  ├── wants research + has "research" → WEB_RESEARCH (search+scrape Agent)
-                  ├── wants fetch    + has "fetch"    → PAGE_FETCH   (scrape-only Agent)
-                  ├── wants either   − permission     → PERMISSION_DENIED (no Agent, no tools)
-                  └── otherwise                        → converse
+each turn     → route_turn(): session setup, then super() → LLM router
+                  ├── docstring catalog → WEB_RESEARCH · PAGE_FETCH · PROFILE_INFO · converse · end
+                  ├── handler checks permission → runs its Agent, or denies in code
+                  └── PROFILE_INFO answers from state — detection is fuzzy, answers are code
 ```
 
 The security property to teach: **permissions map to tool allowlists**. The
@@ -59,6 +64,13 @@ Try the same two messages under each profile:
 
 1. `Research recent developments in agent orchestration frameworks.`
 2. `Fetch https://docs.crewai.com and summarize it.`
+
+## Persistence
+
+The flow carries `@persist()`: rerun with the same `--session` id and the
+conversation resumes across restarts. Permissions are re-resolved on every
+turn, so a resumed session never keeps grants its profile has lost — sessions
+resume; claims must not.
 
 ## Checkpoint
 

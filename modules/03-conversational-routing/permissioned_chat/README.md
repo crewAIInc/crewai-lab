@@ -28,6 +28,22 @@ Try the same two messages under each profile:
 1. `Research recent developments in agent orchestration frameworks.`
 2. `Fetch https://docs.crewai.com and summarize this page.`
 
+## Persistence: quit and resume
+
+Chats are snapshotted via `@persist()` into `CREWAI_STORAGE_DIR`
+(default `./storage`, gitignored). Reuse a session id to continue after a
+restart:
+
+```bash
+uv run python src/permissioned_chat/main.py --profile viewer --session demo-1
+# chat, then quit — later:
+uv run python src/permissioned_chat/main.py --profile viewer --session demo-1  # resumes
+```
+
+(`crewai run` reads `CHAT_SESSION` from `.env` instead of a flag.) Identity
+sticks to the session, but permissions are re-resolved every turn — a resumed
+session never keeps stale grants. Delete `./storage` to forget all chats.
+
 ## Run one turn with a trigger payload (AMP-style invocation)
 
 ```bash

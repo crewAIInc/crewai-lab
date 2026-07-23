@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 02 · Flow Foundations — CrewAI Flows</title>
+
+<!-- Fonts: Cabinet Grotesk (display) + General Sans (body) from Fontshare, JetBrains Mono (code) from Google -->
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=general-sans@400,500,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&display=swap">
+
+<style>
+/* ===========================================
+   THEME — "Warm Terminal"
+   Deep coal background warmed toward CrewAI's
+   orange. Change these variables to retheme.
+   =========================================== */
+:root {
+    --bg-primary: #120e0b;          /* warm near-black */
+    --bg-panel: #1c1611;            /* raised panels / code windows */
+    --bg-chip: #241c15;             /* small chips and tags */
+    --line: rgba(255, 149, 97, 0.14);
+    --text-primary: #f5ede4;
+    --text-secondary: #a4988a;
+    --accent: #ff5a50;              /* CrewAI orange-red */
+    --accent-soft: #ff8a5c;
+    --amber: #ffb454;               /* decorators, highlights */
+    --green: #9ece6a;               /* strings, success */
+    --accent-glow: rgba(255, 90, 80, 0.35);
+
+    --font-display: 'Cabinet Grotesk', sans-serif;
+    --font-body: 'General Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Typography — clamp() everywhere so slides scale */
+    --title-size: clamp(2.2rem, 7vw, 5.5rem);
+    --h2-size: clamp(1.4rem, 3.6vw, 2.6rem);
+    --body-size: clamp(0.8rem, 1.4vw, 1.05rem);
+    --code-size: clamp(0.62rem, 1.25vw, 0.95rem);
+    --small-size: clamp(0.65rem, 1vw, 0.875rem);
+
+    --slide-padding: clamp(1.25rem, 4.5vw, 4.5rem);
+    --content-gap: clamp(0.6rem, 2vw, 1.6rem);
+    --element-gap: clamp(0.25rem, 1vw, 1rem);
+
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration-normal: 0.7s;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: var(--body-size);
+}
+::selection { background: var(--accent); color: var(--bg-primary); }
+
+/* ===========================================
+   VIEWPORT FITTING: MANDATORY BASE STYLES
+   (viewport-base.css — do not remove)
+   =========================================== */
+html, body { height: 100%; overflow-x: hidden; }
+html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+
+.slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-height: 100%;
+    overflow: hidden;
+    padding: var(--slide-padding);
+}
+.card, .container, .content-box { max-width: min(90vw, 1000px); max-height: min(80vh, 700px); }
+.feature-list, .bullet-list { gap: clamp(0.4rem, 1vh, 1rem); }
+.feature-list li, .bullet-list li { font-size: var(--body-size); line-height: 1.4; }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+}
+img, .image-container { max-width: 100%; max-height: min(50vh, 400px); object-fit: contain; }
+
+@media (max-height: 700px) {
+    :root {
+        --slide-padding: clamp(0.75rem, 3vw, 2rem);
+        --content-gap: clamp(0.4rem, 1.5vw, 1rem);
+        --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
+        --h2-size: clamp(1rem, 3vw, 1.75rem);
+    }
+}
+@media (max-height: 600px) {
+    :root {
+        --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
+        --content-gap: clamp(0.3rem, 1vw, 0.75rem);
+        --title-size: clamp(1.1rem, 4vw, 2rem);
+        --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+    }
+    .nav-dots, .keyboard-hint, .decorative { display: none; }
+}
+@media (max-height: 500px) {
+    :root {
+        --slide-padding: clamp(0.4rem, 2vw, 1rem);
+        --title-size: clamp(1rem, 3.5vw, 1.5rem);
+        --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+        --body-size: clamp(0.65rem, 1vw, 0.85rem);
+    }
+}
+@media (max-width: 600px) {
+    :root { --title-size: clamp(1.25rem, 7vw, 2.5rem); }
+    .grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+    html { scroll-behavior: auto; }
+}
+/* ============ end viewport-base.css ============ */
+
+/* ===========================================
+   BACKGROUND ATMOSPHERE
+   Faint blueprint grid + one warm glow per slide.
+   =========================================== */
+.slide::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 40%, black 0%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 0%, transparent 78%);
+    pointer-events: none;
+}
+.slide::after {
+    content: "";
+    position: absolute;
+    width: 60vw; height: 60vw;
+    max-width: 800px; max-height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 90, 80, 0.10) 0%, transparent 65%);
+    top: -20vh; right: -15vw;
+    pointer-events: none;
+}
+.slide:nth-child(even)::after { top: auto; right: auto; bottom: -20vh; left: -15vw; }
+
+/* ===========================================
+   TYPOGRAPHY
+   =========================================== */
+h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--title-size);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+}
+h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: var(--h2-size);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+}
+p, li { color: var(--text-secondary); line-height: 1.5; }
+strong { color: var(--text-primary); font-weight: 600; }
+.accent { color: var(--accent); }
+.amber { color: var(--amber); }
+
+/* Kicker: small mono label above each slide title, styled like a prompt */
+.kicker {
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--accent-soft);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: clamp(0.4rem, 1.2vh, 0.9rem);
+}
+.kicker::before { content: "❯ "; color: var(--accent); }
+
+/* Slide index in the corner, like an editor line number */
+.slide-num {
+    position: absolute;
+    top: clamp(0.8rem, 2.5vh, 1.8rem);
+    right: var(--slide-padding);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    opacity: 0.55;
+    z-index: 2;
+}
+
+/* ===========================================
+   COMPONENTS
+   =========================================== */
+
+/* Terminal-window code blocks with traffic lights */
+.code-window {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    max-width: min(92vw, 880px);
+}
+.code-titlebar {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: clamp(0.4rem, 1vh, 0.65rem) clamp(0.7rem, 1.5vw, 1rem);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+.code-titlebar span:last-child { margin-left: 0.4rem; }
+pre {
+    padding: clamp(0.6rem, 1.6vh, 1.1rem) clamp(0.8rem, 1.8vw, 1.3rem);
+    font-family: var(--font-mono);
+    font-size: var(--code-size);
+    line-height: 1.55;
+    overflow-x: auto;
+    color: var(--text-primary);
+}
+/* Minimal hand-rolled highlighting */
+.kw { color: var(--accent-soft); }          /* keywords */
+.dec { color: var(--amber); font-weight: 600; } /* decorators */
+.str { color: var(--green); }               /* strings */
+.cm { color: #6f6357; font-style: italic; } /* comments */
+.fn { color: #7dcfff; }                     /* function / class names */
+
+/* Concept cards (anatomy grid) */
+.card {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: clamp(0.7rem, 1.8vw, 1.3rem);
+    transition: transform 0.3s var(--ease-out-expo), border-color 0.3s;
+}
+.card:hover { transform: translateY(-4px); border-color: var(--accent); }
+.card .mono-tag {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--amber);
+    font-size: clamp(0.75rem, 1.6vw, 1.1rem);
+    display: block;
+    margin-bottom: clamp(0.2rem, 0.6vh, 0.45rem);
+}
+.card p { font-size: var(--small-size); }
+
+/* Chips: inline mono tokens (@router, or_, commands) */
+.chip {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--amber);
+    background: var(--bg-chip);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.15em 0.55em;
+    white-space: nowrap;
+}
+
+/* Pipeline diagram: step boxes joined by arrows */
+.pipeline {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: clamp(0.3rem, 0.9vw, 0.7rem);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+}
+.pipe-step {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: clamp(0.35rem, 1vh, 0.6rem) clamp(0.55rem, 1.4vw, 0.95rem);
+    color: var(--text-primary);
+}
+.pipe-step small { display: block; color: var(--amber); font-size: 0.82em; }
+.pipe-arrow { color: var(--accent); font-weight: 600; }
+
+/* ===========================================
+   FLOW DIAGRAM — vertical use-case graph
+   (anatomy slide): nodes, connectors, fan-out
+   to queue labels, fan-in to the Agent step.
+   =========================================== */
+.flow-diagram {
+    display: flex; flex-direction: column; align-items: center;
+    font-family: var(--font-mono);
+    font-size: calc(var(--small-size) * 0.95);
+    width: 100%; max-width: 420px; margin: 0 auto;
+}
+.fd-node {
+    background: var(--bg-panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: clamp(0.3rem, 0.9vh, 0.55rem) clamp(0.6rem, 1.4vw, 1rem);
+    color: var(--text-primary);
+    text-align: center;
+    position: relative;
+}
+.fd-node small { display: block; color: var(--amber); font-size: 0.8em; }
+.fd-node.fd-hot { border-color: var(--accent); box-shadow: 0 0 16px rgba(255, 90, 80, 0.18); }
+.fd-badge {
+    position: absolute; top: -0.75em; right: -0.6em;
+    background: var(--bg-chip);
+    border: 1px solid var(--amber); color: var(--amber);
+    border-radius: 999px;
+    font-size: 0.68em; padding: 0.12em 0.6em;
+    white-space: nowrap;
+}
+.fd-badge.fd-llm { border-color: var(--accent); color: var(--accent-soft); box-shadow: 0 0 10px var(--accent-glow); }
+.fd-vline {
+    width: 2px; height: clamp(16px, 3.6vh, 38px);
+    background: linear-gradient(var(--accent), var(--accent-soft));
+    opacity: 0.55;
+}
+.fd-fan { width: min(100%, 340px); height: clamp(22px, 4.8vh, 46px); display: block; flex: none; margin: clamp(3px, 0.6vh, 7px) 0; }
+.fd-fan path { stroke: rgba(255, 90, 80, 0.5); stroke-width: 1.5; fill: none; }
+.fd-chiprow { display: flex; gap: clamp(0.3rem, 0.8vw, 0.6rem); }
+.fd-chiprow .chip { font-size: 0.78em; }
+@media (max-height: 700px) { .flow-diagram { font-size: 0.7rem; } }
+
+/* Two-column layout: code beside talking points */
+.split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: var(--content-gap);
+    align-items: center;
+    max-width: min(94vw, 1200px);
+}
+@media (max-width: 860px) { .split { grid-template-columns: 1fr; } .split .side-notes, .split .flow-diagram { display: none; } }
+
+.bullet-list { list-style: none; display: flex; flex-direction: column; }
+.bullet-list li { padding-left: 1.4em; position: relative; }
+.bullet-list li::before {
+    content: "▸"; position: absolute; left: 0; color: var(--accent);
+    font-family: var(--font-mono);
+}
+
+/* ===========================================
+   REVEAL ANIMATIONS (staggered per slide)
+   =========================================== */
+.reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity var(--duration-normal) var(--ease-out-expo),
+                transform var(--duration-normal) var(--ease-out-expo);
+}
+.slide.visible .reveal { opacity: 1; transform: translateY(0); }
+.reveal:nth-child(1) { transition-delay: 0.05s; }
+.reveal:nth-child(2) { transition-delay: 0.15s; }
+.reveal:nth-child(3) { transition-delay: 0.25s; }
+.reveal:nth-child(4) { transition-delay: 0.35s; }
+.reveal:nth-child(5) { transition-delay: 0.45s; }
+.reveal:nth-child(6) { transition-delay: 0.55s; }
+
+/* Blinking cursor on the title slide */
+.cursor {
+    display: inline-block; width: 0.55em; height: 0.95em;
+    background: var(--accent); margin-left: 0.12em;
+    vertical-align: baseline;
+    animation: blink 1.1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ===========================================
+   CHROME: progress bar, nav dots, hint
+   =========================================== */
+.progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--amber));
+    z-index: 9000;
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+.nav-dots {
+    position: fixed; right: clamp(0.6rem, 1.5vw, 1.4rem); top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 0.6rem;
+    z-index: 9000;
+}
+.nav-dots button {
+    width: 9px; height: 9px; border-radius: 50%;
+    border: 1px solid var(--text-secondary);
+    background: transparent; cursor: pointer; padding: 0;
+    transition: background 0.25s, transform 0.25s, border-color 0.25s;
+}
+.nav-dots button.active {
+    background: var(--accent); border-color: var(--accent);
+    transform: scale(1.35);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+.keyboard-hint {
+    position: fixed; bottom: clamp(0.6rem, 2vh, 1.2rem); left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono); font-size: var(--small-size);
+    color: var(--text-secondary); opacity: 0.5; z-index: 9000;
+    pointer-events: none;
+}
+
+/* ===========================================
+   INLINE EDITING (opt-in) — hover top-left or
+   press E; changes autosave to localStorage.
+   =========================================== */
+.edit-hotzone { position: fixed; top: 0; left: 0; width: 80px; height: 80px; z-index: 10000; cursor: pointer; }
+.edit-toggle {
+    position: fixed; top: 14px; left: 14px; z-index: 10001;
+    opacity: 0; pointer-events: none;
+    background: var(--bg-panel); color: var(--text-primary);
+    border: 1px solid var(--line); border-radius: 8px;
+    font-size: 1rem; padding: 0.35rem 0.55rem; cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+.edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
+.edit-toggle.active { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+.edit-badge {
+    position: fixed; top: 14px; left: 60px; z-index: 10001;
+    display: none; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: var(--small-size);
+    background: var(--bg-panel); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 0.35rem 0.7rem; color: var(--amber);
+}
+.edit-badge.show { display: flex; }
+.edit-badge button {
+    font-family: inherit; font-size: inherit;
+    background: var(--accent); color: var(--bg-primary);
+    border: none; border-radius: 5px; padding: 0.15rem 0.5rem; cursor: pointer;
+}
+body.editing [data-ed] {
+    outline: 1px dashed rgba(255, 180, 84, 0.6);
+    outline-offset: 3px; border-radius: 3px; cursor: text;
+}
+body.editing [data-ed]:focus { outline: 2px solid var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"></div>
+<nav class="nav-dots" aria-label="Slide navigation"></nav>
+<div class="keyboard-hint">← → navigate · E edit</div>
+
+<!-- Inline editing controls -->
+<div class="edit-hotzone" title="Edit mode"></div>
+<button class="edit-toggle" id="editToggle" title="Edit mode (E)">✏️</button>
+<div class="edit-badge" id="editBadge">
+    <span>editing — autosaves</span>
+    <button id="exportBtn" title="Download edited HTML">export</button>
+    <button id="resetBtn" title="Discard saved edits">reset</button>
+</div>
+
+<!-- ================= SLIDE 1 · TITLE ================= -->
+<section class="slide">
+    <div class="slide-content" style="align-items: flex-start;">
+        <p class="kicker reveal" data-ed>module 02 · crewai workshop</p>
+        <h1 class="reveal" data-ed>Flow<br>Foundations<span class="cursor"></span></h1>
+        <p class="reveal" data-ed style="margin-top: var(--content-gap); max-width: 34em;">
+            Deterministic orchestration for agentic systems — taught through
+            <strong>TriageX</strong>, which triages the GitHub issues and PRs
+            opened on <strong>crewAIInc/crewAI</strong> in a date range.
+        </p>
+        <div class="pipeline reveal" style="margin-top: var(--content-gap);">
+            <span class="pipe-step">GitHub date range</span><span class="pipe-arrow">─▶</span>
+            <span class="pipe-step">Flow</span><span class="pipe-arrow">─▶</span>
+            <span class="pipe-step">Agent</span><span class="pipe-arrow">─▶</span>
+            <span class="pipe-step">Linear issues</span>
+        </div>
+    </div>
+    <span class="slide-num">01 / 15</span>
+</section>
+
+<!-- ================= SLIDE 2 · WHY FLOWS ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>why flows</p>
+        <h2 class="reveal" data-ed>Flows <span class="accent">decide</span>. Agents <span class="amber">phrase</span>.</h2>
+        <ul class="bullet-list reveal" data-ed style="margin-top: var(--content-gap); max-width: 42em;">
+            <li><strong>Event-driven orchestration</strong> — steps fire when upstream steps complete, not on a model's whim.</li>
+            <li><strong>Mix code and LLMs freely</strong> — plain Python, direct LLM calls, single Agents, or whole Crews in one pipeline.</li>
+            <li><strong>Business rules live in code</strong> — routing, priority, and validation are reviewable and testable.</li>
+            <li><strong>Typed state throughout</strong> — every step reads and writes one Pydantic model.</li>
+        </ul>
+        <p class="reveal" data-ed style="margin-top: var(--content-gap); font-family: var(--font-mono); font-size: var(--small-size); color: var(--accent-soft);">
+            If a decision must be right every time, put it in the Flow — not the prompt.
+        </p>
+    </div>
+    <span class="slide-num">02 / 15</span>
+</section>
+
+<!-- ================= SLIDE 3 · ANATOMY ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>anatomy of a flow</p>
+        <h2 class="reveal" data-ed>Four pieces, one pipeline</h2>
+        <div class="split" style="margin-top: var(--content-gap); align-items: center; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);">
+            <div class="grid reveal" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <div class="card" data-ed>
+                    <span class="mono-tag">Flow[StateModel]</span>
+                    <p>Subclass <strong>Flow</strong>, parameterized with your Pydantic state. Methods become steps.</p>
+                </div>
+                <div class="card" data-ed>
+                    <span class="mono-tag">self.state</span>
+                    <p>The <strong>data plane</strong> — one typed object every step reads and mutates.</p>
+                </div>
+                <div class="card" data-ed>
+                    <span class="mono-tag">@start · @listen · @router</span>
+                    <p>The <strong>control plane</strong> — decorators wire steps into an event graph, with <code class="chip">or_</code>/<code class="chip">and_</code> for fan-in.</p>
+                </div>
+                <div class="card" data-ed>
+                    <span class="mono-tag">kickoff() · plot()</span>
+                    <p><strong>Run</strong> the flow with inputs; <strong>visualize</strong> the graph as HTML.</p>
+                </div>
+            </div>
+            <!-- TriageX as a vertical flow graph: this module's actual buildout -->
+            <div class="flow-diagram reveal" role="img" aria-label="TriageX flow graph: a GitHub date range trigger, fetch_range via a GitHub Agent App, a deterministic triage gate fanning out to accepted and rejected, accepted items publishing to Linear, then summarize">
+                <div class="fd-node" data-ed><small>trigger · kickoff(inputs=…)</small>crewAIInc/crewAI · since..until</div>
+                <div class="fd-vline"></div>
+                <div class="fd-node" data-ed><small>@start</small>fetch_range<span class="fd-badge fd-llm">Agent · GitHub apps</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>@listen(fetch_range)</small>triage_range<span class="fd-badge">rules · no LLM</span></div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 95,10 95,26"/>
+                    <path d="M170,0 C170,14 245,10 245,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">accepted</span>
+                    <span class="chip">rejected · never published</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M95,0 C95,16 170,12 170,26"/>
+                    <path d="M245,0 C245,16 170,12 170,26"/>
+                </svg>
+                <div class="fd-node" data-ed><small>@listen(triage_range)</small>publish_accepted<span class="fd-badge fd-llm">Agent · save_issue · opt-in</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node" data-ed><small>@listen(publish_accepted)</small>summarize</div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">03 / 15</span>
+</section>
+
+<!-- ================= SLIDE 4 · TYPED STATE ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>state — the data plane</p>
+        <h2 class="reveal" data-ed>One Pydantic model carries everything</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>triagex_flow.py</span></div>
+<pre data-ed><span class="kw">class</span> <span class="fn">TriageState</span>(BaseModel):
+    case: <span class="fn">SupportCase</span> = Field(default_factory=<span class="fn">SupportCase</span>)
+    queue: <span class="kw">str</span> = <span class="str">"unassigned"</span>
+    priority: <span class="kw">str</span> = <span class="str">"P2"</span>
+    reasons: <span class="kw">list</span>[<span class="kw">str</span>] = Field(default_factory=<span class="kw">list</span>)
+    sync_to_linear: <span class="kw">bool</span> = <span class="kw">False</span>
+
+<span class="kw">class</span> <span class="fn">TriageXFlow</span>(<span class="fn">Flow</span>[<span class="fn">TriageState</span>]):
+    <span class="cm"># every step reads & writes self.state</span></pre>
+            </div>
+            <!-- The code drawn: inputs hydrate one typed object every step shares -->
+            <div class="flow-diagram reveal" role="img" aria-label="State diagram: kickoff inputs hydrate the TriageState model, whose fields are shared by every step, ending as the audit trail">
+                <div class="fd-node" data-ed><small>hydrates once</small>kickoff(inputs=…)</div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>the data plane</small>TriageState<span class="fd-badge">pydantic · validated</span></div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 60,10 60,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M170,0 C170,14 280,10 280,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">case</span>
+                    <span class="chip">queue · priority</span>
+                    <span class="chip">sync_to_linear</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M60,0 C60,16 170,12 170,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M280,0 C280,16 170,12 170,26"/>
+                </svg>
+                <div class="fd-node" data-ed><small>every step reads &amp; writes</small>self.state</div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>model_dump_json() after the run = the audit trail</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">04 / 15</span>
+</section>
+
+<!-- ================= SLIDE 5 · FLOW TOOLBOX (API AT A GLANCE) ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>the flow toolbox</p>
+        <h2 class="reveal" data-ed>Core decorators, one glance</h2>
+        <div class="grid reveal" style="grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: min(94vw, 1100px); margin-top: var(--content-gap);">
+            <div class="card" data-ed>
+                <span class="mono-tag">@start()</span>
+                <p><strong>Entry point.</strong> Runs on <code class="chip">kickoff()</code>; several <code class="chip">@start</code> methods run in parallel.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">@listen(step)</span>
+                <p><strong>Chain.</strong> Fires when a step (or <code class="chip">"label"</code>) completes; receives its return value.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">@router(step)</span>
+                <p><strong>Branch.</strong> Returns a label string; each <code class="chip">@listen("LABEL")</code> starts a different path.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">or_() · and_()</span>
+                <p><strong>Fan-in.</strong> <code class="chip">or_</code> fires on the first upstream step, <code class="chip">and_</code> waits for all of them.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">@persist</span>
+                <p><strong>Durability.</strong> Saves state (SQLite) after steps; resume or fork a run by its state <code class="chip">id</code>.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">@human_feedback(…)</span>
+                <p><strong>Approval gate.</strong> Pauses for a reviewer; their reply maps onto <code class="chip">emit</code> labels.</p>
+            </div>
+        </div>
+        <div class="pipeline reveal" data-ed style="margin-top: var(--content-gap); align-items: baseline;">
+            <span style="font-family: var(--font-mono); font-size: var(--small-size); color: var(--accent-soft);">methods ❯</span>
+            <span class="chip">kickoff(inputs=…)</span>
+            <span class="chip">plot()</span>
+            <span class="chip">self.state</span>
+            <span class="chip">usage_metrics</span>
+            <span class="chip">memory &amp; resume — next slide ▸</span>
+        </div>
+    </div>
+    <span class="slide-num">05 / 15</span>
+</section>
+
+<!-- ================= SLIDE 6 · BUILT-IN FLOW METHODS ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>built-in flow methods</p>
+        <h2 class="reveal" data-ed>Memory, resume, streaming — on <span class="amber">self</span></h2>
+        <div class="grid reveal" style="grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: min(94vw, 1100px); margin-top: var(--content-gap);">
+            <div class="card" data-ed>
+                <span class="mono-tag">self.remember(content, …)</span>
+                <p><strong>Memory write.</strong> Store facts with <code class="chip">scope</code> (e.g. <code class="chip">/accounts/acme/…</code>), <code class="chip">categories</code>, and <code class="chip">importance</code> — durable across runs.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">self.recall(query, …)</span>
+                <p><strong>Memory read.</strong> Semantic search within a <code class="chip">scope</code>, capped by <code class="chip">limit</code>. Treat results as context, never authority.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">self.extract_memories(text)</span>
+                <p><strong>Distill.</strong> Turns raw text into a list of discrete facts ready to <code class="chip">remember()</code>.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">resume(feedback)</span>
+                <p><strong>Continue after a pause.</strong> Picks a flow back up at its <code class="chip">@human_feedback</code> gate; <code class="chip">pending_feedback</code> tells you it's waiting.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">stream_events() · kickoff_async()</span>
+                <p><strong>Streaming &amp; async.</strong> Consume execution as ordered frames, or run the graph on an event loop.</p>
+            </div>
+            <div class="card" data-ed>
+                <span class="mono-tag">fork() · from_checkpoint()</span>
+                <p><strong>Branch &amp; restore.</strong> Rebuild a flow from a checkpoint, or fork a new execution branch from one.</p>
+            </div>
+        </div>
+        <p class="reveal" data-ed style="margin-top: var(--content-gap); font-family: var(--font-mono); font-size: var(--small-size); color: var(--accent-soft);">
+            Memory is scoped on purpose: /accounts/&lt;slug&gt;/… keeps tenants separate — same idea as the MCP allowlists.
+        </p>
+    </div>
+    <span class="slide-num">06 / 15</span>
+</section>
+
+<!-- ================= SLIDE 7 · DECORATORS DEEP DIVE ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>decorators — the control plane</p>
+        <h2 class="reveal" data-ed><span class="amber">@start</span> enters, <span class="amber">@listen</span> chains</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>TriageXFlow</span></div>
+<pre data-ed><span class="dec">@start</span>()                    <span class="cm"># entry point</span>
+<span class="kw">def</span> <span class="fn">normalize</span>(self) -&gt; <span class="fn">SupportCase</span>:
+    self.state.case.severity = (
+        self.state.case.severity.strip().casefold())
+    <span class="kw">return</span> self.state.case
+
+<span class="dec">@listen</span>(normalize)          <span class="cm"># fires when normalize returns</span>
+<span class="kw">def</span> <span class="fn">triage</span>(self) -&gt; <span class="kw">str</span>: ...</pre>
+            </div>
+            <!-- The code drawn: a straight event chain, return values flowing down -->
+            <div class="flow-diagram reveal" role="img" aria-label="Chain diagram: kickoff triggers the @start method normalize, whose completion fires the @listen method triage; each completion event carries the return value, and the last return becomes the flow result">
+                <div class="fd-node" data-ed><small>run</small>kickoff()</div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>@start()</small>normalize<span class="fd-badge">entry point</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-chiprow" data-ed><span class="chip">completion event · return value</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node" data-ed><small>@listen(normalize)</small>triage<span class="fd-badge">receives the return</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node" data-ed><small>@listen(triage)</small>…</div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>last return = flow result · clean inputs once, at the boundary</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">07 / 15</span>
+</section>
+
+<!-- ================= SLIDE 6 · ROUTING ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>deterministic routing</p>
+        <h2 class="reveal" data-ed>Policy is code you can unit-test</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>triage — no LLM involved</span></div>
+<pre data-ed><span class="dec">@listen</span>(normalize)
+<span class="kw">def</span> <span class="fn">triage</span>(self) -&gt; <span class="kw">str</span>:
+    <span class="kw">if</span> self.state.case.severity == <span class="str">"critical"</span>:
+        self.state.queue = <span class="str">"incident_response"</span>
+        self.state.priority = <span class="str">"P0"</span>
+    <span class="kw">elif</span> tier == <span class="str">"strategic"</span> <span class="kw">and</span> <span class="str">"renewal"</span> <span class="kw">in</span> summary:
+        self.state.queue = <span class="str">"account_escalation"</span>
+    <span class="kw">else</span>:
+        self.state.queue = <span class="str">"support"</span>
+    <span class="kw">return</span> self.state.queue</pre>
+            </div>
+            <!-- The code drawn: value branching that re-converges — one next step -->
+            <div class="flow-diagram reveal" role="img" aria-label="Deterministic routing diagram: the triage step's if/elif/else assigns one of three queue values — incident_response, account_escalation, or support — and all paths continue to the same next step">
+                <div class="fd-node fd-hot" data-ed><small>@listen(normalize)</small>triage<span class="fd-badge">rules · no LLM</span></div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 55,10 55,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M170,0 C170,14 285,10 285,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">incident_response · P0</span>
+                    <span class="chip">escalation · P1</span>
+                    <span class="chip">support · P2</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M55,0 C55,16 170,12 170,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M285,0 C285,16 170,12 170,26"/>
+                </svg>
+                <div class="fd-node" data-ed><small>value routing — every path continues to</small>the same next step</div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>same input → same route, every time · different next steps? → @router, next slide</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">08 / 15</span>
+</section>
+
+<!-- ================= SLIDE 7 · @ROUTER ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>branching — @router</p>
+        <h2 class="reveal" data-ed><span class="amber">@router</span> returns a label, listeners pick it up</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>named branches</span></div>
+<pre data-ed><span class="dec">@router</span>(triage)
+<span class="kw">def</span> <span class="fn">dispatch</span>(self) -&gt; <span class="kw">str</span>:
+    <span class="kw">return</span> <span class="str">"INCIDENT"</span> <span class="kw">if</span> self.state.priority == <span class="str">"P0"</span> <span class="kw">else</span> <span class="str">"STANDARD"</span>
+
+<span class="dec">@listen</span>(<span class="str">"INCIDENT"</span>)
+<span class="kw">def</span> <span class="fn">page_oncall</span>(self): ...
+
+<span class="dec">@listen</span>(<span class="str">"STANDARD"</span>)
+<span class="kw">def</span> <span class="fn">queue_for_support</span>(self): ...</pre>
+            </div>
+            <!-- The code on the left, drawn: router emits a label, each label owns a path -->
+            <div class="flow-diagram reveal" role="img" aria-label="Router diagram: triage flows into the dispatch router, which returns INCIDENT or STANDARD; each label triggers its own listener — page_oncall or queue_for_support — and the paths never converge">
+                <div class="fd-node" data-ed><small>@listen(normalize)</small>triage</div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>@router(triage)</small>dispatch<span class="fd-badge">returns a label</span></div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 90,10 90,26"/>
+                    <path d="M170,0 C170,14 250,10 250,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">"INCIDENT"</span>
+                    <span class="chip">"STANDARD"</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M90,0 L90,26"/>
+                    <path d="M250,0 L250,26"/>
+                </svg>
+                <div style="display: flex; gap: clamp(0.5rem, 1.4vw, 1rem); justify-content: center; width: 100%;">
+                    <div class="fd-node" data-ed><small>@listen("INCIDENT")</small>page_oncall</div>
+                    <div class="fd-node" data-ed><small>@listen("STANDARD")</small>queue_for_support</div>
+                </div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>unmatched label → that path never runs · same pattern as route_turn() in module 03</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">09 / 15</span>
+</section>
+
+<!-- ================= SLIDE 8 · OR_ / AND_ ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>fan-in — or_ &amp; and_</p>
+        <h2 class="reveal" data-ed>Joining paths: <span class="amber">or_</span> = any, <span class="amber">and_</span> = all</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>merging branches</span></div>
+<pre data-ed><span class="cm"># fires when EITHER branch finishes (first one wins)</span>
+<span class="dec">@listen</span>(<span class="fn">or_</span>(page_oncall, queue_for_support))
+<span class="kw">def</span> <span class="fn">summarize</span>(self, result): ...
+
+<span class="cm"># fires only when BOTH lookups have finished</span>
+<span class="dec">@listen</span>(<span class="fn">and_</span>(fetch_account, fetch_usage))
+<span class="kw">def</span> <span class="fn">build_report</span>(self): ...</pre>
+            </div>
+            <!-- The code drawn: two joins — or_ fires on the first arrival, and_ waits for both -->
+            <div class="flow-diagram reveal" role="img" aria-label="Fan-in diagram: page_oncall and queue_for_support converge through or_ into summarize, which fires on whichever finishes first; fetch_account and fetch_usage converge through and_ into build_report, which waits for both">
+                <div style="display: flex; gap: clamp(0.5rem, 1.4vw, 1rem); justify-content: center; width: 100%;">
+                    <div class="fd-node" data-ed>page_oncall</div>
+                    <div class="fd-node" data-ed>queue_for_support</div>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M90,0 C90,16 170,12 170,26"/>
+                    <path d="M250,0 C250,16 170,12 170,26"/>
+                </svg>
+                <div class="fd-node fd-hot" data-ed><small>@listen(or_(…))</small>summarize<span class="fd-badge">any · first one wins</span></div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div style="display: flex; gap: clamp(0.5rem, 1.4vw, 1rem); justify-content: center; width: 100%;">
+                    <div class="fd-node" data-ed>fetch_account</div>
+                    <div class="fd-node" data-ed>fetch_usage</div>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M90,0 C90,16 170,12 170,26"/>
+                    <path d="M250,0 C250,16 170,12 170,26"/>
+                </svg>
+                <div class="fd-node fd-hot" data-ed><small>@listen(and_(…))</small>build_report<span class="fd-badge fd-llm">all · barrier</span></div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>parallel @start() methods meet back up through and_()</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">10 / 15</span>
+</section>
+
+<!-- ================= SLIDE 9 · @PERSIST ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>durability — @persist</p>
+        <h2 class="reveal" data-ed><span class="amber">@persist</span>: state that survives restarts</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>crewai.flow.persistence</span></div>
+<pre data-ed><span class="dec">@persist</span>                <span class="cm"># SQLite-backed by default</span>
+<span class="kw">class</span> <span class="fn">TriageXFlow</span>(<span class="fn">Flow</span>[<span class="fn">TriageState</span>]):
+    ...
+
+<span class="cm"># resume an existing run by its state id</span>
+flow.kickoff(inputs={<span class="str">"id"</span>: existing_uuid})
+
+<span class="cm"># fork: copy that state into a fresh run</span>
+flow.kickoff(restore_from_state_id=existing_uuid)</pre>
+            </div>
+            <!-- The code drawn: every step checkpoints; the saved id resumes or forks -->
+            <div class="flow-diagram reveal" role="img" aria-label="Persistence diagram: a running flow saves state after every step into a SQLite checkpoint keyed by the state id; from that checkpoint you can resume the same run or fork a new branch">
+                <div class="fd-node" data-ed><small>@persist</small>running flow<span class="fd-badge">saves after every step</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>SQLite checkpoint</small>state id · uuid</div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 90,10 90,26"/>
+                    <path d="M170,0 C170,14 250,10 250,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">resume</span>
+                    <span class="chip">fork</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M90,0 L90,26"/>
+                    <path d="M250,0 L250,26"/>
+                </svg>
+                <div style="display: flex; gap: clamp(0.5rem, 1.4vw, 1rem); justify-content: center; width: 100%;">
+                    <div class="fd-node" data-ed><small>kickoff(inputs={"id": …})</small>same run continues</div>
+                    <div class="fd-node" data-ed><small>restore_from_state_id</small>new branch</div>
+                </div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>class-level = every step · method-level = just that step</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">11 / 15</span>
+</section>
+
+<!-- ================= SLIDE 10 · @HUMAN_FEEDBACK ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>approval gates — @human_feedback</p>
+        <h2 class="reveal" data-ed><span class="amber">@human_feedback</span> pauses for a person</h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>preview of module 07</span></div>
+<pre data-ed><span class="dec">@listen</span>(generate_email)
+<span class="dec">@human_feedback</span>(
+    message=<span class="str">"Approve, reject, or request revision:"</span>,
+    emit=[<span class="str">"approved"</span>, <span class="str">"rejected"</span>, <span class="str">"needs_revision"</span>],
+    llm=LAB_MODEL,
+    default_outcome=<span class="str">"needs_revision"</span>,
+)
+<span class="kw">def</span> <span class="fn">evaluate_for_review</span>(self, draft) -&gt; <span class="kw">str</span>: ...
+
+<span class="dec">@listen</span>(<span class="str">"approved"</span>)
+<span class="kw">def</span> <span class="fn">publish</span>(self, review: <span class="fn">HumanFeedbackResult</span>): ...</pre>
+            </div>
+            <!-- The code drawn: flow pauses, a human replies, the reply becomes a route -->
+            <div class="flow-diagram reveal" role="img" aria-label="Human feedback diagram: the evaluate_for_review step pauses the flow and shows its output to a reviewer; an LLM maps the freeform reply onto approved, rejected, or needs_revision, and the matching listener runs with the reviewer's note">
+                <div class="fd-node" data-ed><small>@human_feedback</small>evaluate_for_review<span class="fd-badge">flow pauses ⏸</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>reviewer replies, freeform</small>"ship it, but fix the tone"<span class="fd-badge fd-llm">LLM maps → emit label</span></div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 55,10 55,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M170,0 C170,14 285,10 285,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">approved</span>
+                    <span class="chip">rejected</span>
+                    <span class="chip">needs_revision</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M55,0 L55,26"/>
+                    <path d="M170,0 L170,26"/>
+                    <path d="M285,0 L285,26"/>
+                </svg>
+                <div class="fd-node" data-ed><small>@listen("label") receives</small>HumanFeedbackResult · reviewer's note</div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>unmappable reply → default_outcome · routed like a @router</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">12 / 15</span>
+</section>
+
+<!-- ================= SLIDE 11 · AGENT BOUNDARY ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>agents inside flows</p>
+        <h2 class="reveal" data-ed>The Agent is an <span class="accent">integration boundary</span></h2>
+        <div class="split" style="margin-top: var(--content-gap);">
+            <div class="code-window reveal">
+                <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>create_linear_ticket</span></div>
+<pre data-ed><span class="dec">@listen</span>(triage)
+<span class="kw">def</span> <span class="fn">create_linear_ticket</span>(self) -&gt; <span class="kw">str</span>:
+    <span class="kw">if not</span> self.state.sync_to_linear:  <span class="cm"># side effects opt-in</span>
+        <span class="kw">return</span> <span class="str">"Linear sync skipped"</span>
+    result = build_triage_ticket_agent().kickoff(
+        <span class="str">f"Create one Linear issue via save_issue ..."</span>
+    )   <span class="cm"># agent's only MCP tool: save_issue</span>
+    self.state.linear_issue = result.raw</pre>
+            </div>
+            <!-- The code drawn: the flow's fixed decision, gated by an opt-in flag, then one narrow Agent -->
+            <div class="flow-diagram reveal" role="img" aria-label="Agent boundary diagram: the flow's fixed triage decision passes an opt-in sync gate; false skips with no side effect, true hands the decision to an agent whose only MCP tool is save_issue">
+                <div class="fd-node" data-ed><small>decided by the flow</small>queue · priority — fixed<span class="fd-badge">rules · no LLM</span></div>
+                <div class="fd-vline"></div>
+                <div class="fd-node fd-hot" data-ed><small>opt-in gate</small>sync_to_linear?</div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M170,0 C170,14 90,10 90,26"/>
+                    <path d="M170,0 C170,14 250,10 250,26"/>
+                </svg>
+                <div class="fd-chiprow" data-ed>
+                    <span class="chip">false · default</span>
+                    <span class="chip">true · --sync-linear</span>
+                </div>
+                <svg class="fd-fan" viewBox="0 0 340 26" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M90,0 L90,26"/>
+                    <path d="M250,0 L250,26"/>
+                </svg>
+                <div style="display: flex; gap: clamp(0.5rem, 1.4vw, 1rem); justify-content: center; width: 100%;">
+                    <div class="fd-node" data-ed><small>no side effect</small>"sync skipped"</div>
+                    <div class="fd-node" data-ed><small>publishes, never reclassifies</small>Agent<span class="fd-badge fd-llm">MCP · save_issue only</span></div>
+                </div>
+                <div class="fd-vline" style="opacity: 0;"></div>
+                <div class="fd-chiprow" data-ed style="font-size: 0.72em; color: var(--text-secondary); font-family: var(--font-mono);">
+                    <span>the Agent is the integration boundary — least privilege by allowlist</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-num">13 / 15</span>
+</section>
+
+<!-- ================= SLIDE 12 · RUN & INSPECT ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>run &amp; inspect</p>
+        <h2 class="reveal" data-ed>Kick off, dump state, plot the graph</h2>
+        <div class="code-window reveal" style="margin-top: var(--content-gap);">
+            <div class="code-titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span>run it</span></div>
+<pre data-ed>flow = <span class="fn">TriageXFlow</span>()
+result = flow.kickoff(inputs={<span class="str">"case"</span>: {<span class="str">"severity"</span>: <span class="str">"critical"</span>, ...}})
+
+print(flow.state.model_dump_json(indent=<span class="amber">2</span>))  <span class="cm"># full audit trail</span>
+flow.plot(<span class="str">"triagex_flow"</span>)                     <span class="cm"># interactive HTML graph</span></pre>
+        </div>
+        <ul class="bullet-list reveal" data-ed style="margin-top: var(--content-gap); max-width: 44em;">
+            <li><code class="chip">kickoff(inputs=...)</code> hydrates state, runs the graph, returns the final step's value.</li>
+            <li>State after the run <strong>is</strong> your observability — log it, assert on it. <code class="chip">flow.usage_metrics</code> aggregates token spend across every LLM call.</li>
+            <li>Live demo: <code class="chip">uv run python modules/02-triagex-flow/solution_extended.py --standard</code> — the whole route runs with zero LLM calls; then <code class="chip">cd triagex_flow &amp;&amp; crewai run</code> triages a real GitHub date range.</li>
+        </ul>
+    </div>
+    <span class="slide-num">14 / 15</span>
+</section>
+
+<!-- ================= SLIDE 13 · RECAP + NEXT ================= -->
+<section class="slide">
+    <div class="slide-content">
+        <p class="kicker reveal" data-ed>recap → what's next</p>
+        <h2 class="reveal" data-ed>State is the data plane.<br>Decorators are the control plane.</h2>
+        <ul class="bullet-list reveal" data-ed style="margin-top: var(--content-gap); max-width: 42em;">
+            <li><code class="chip">Flow[State]</code> + <code class="chip">@start</code> / <code class="chip">@listen</code> = a typed, testable pipeline.</li>
+            <li>Branch with <code class="chip">@router</code>, rejoin with <code class="chip">or_</code> / <code class="chip">and_</code>, survive restarts with <code class="chip">@persist</code>, gate with <code class="chip">@human_feedback</code>.</li>
+            <li>Deterministic policy in code; language work delegated to narrowly-scoped Agents.</li>
+            <li><code class="chip">kickoff()</code> to run, <code class="chip">plot()</code> to see, state dump to audit.</li>
+        </ul>
+        <div class="card reveal" data-ed style="margin-top: var(--content-gap); max-width: 42em; border-color: var(--accent);">
+            <span class="mono-tag">next · module 03</span>
+            <p><strong>Conversational Flows</strong> — the same Flow machinery, made multi-turn: set
+            <code class="chip">conversational = True</code>, route each user message with
+            <code class="chip">route_turn()</code>, and keep session state across turns.</p>
+        </div>
+    </div>
+    <span class="slide-num">15 / 15</span>
+</section>
+
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   Keyboard, touch, dots, progress, reveals.
+   =========================================== */
+class SlidePresentation {
+    constructor() {
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.current = 0;
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupProgressBar();
+        this.setupNavDots();
+    }
+
+    /* Adds .visible when a slide enters view → triggers .reveal transitions */
+    setupIntersectionObserver() {
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    this.current = this.slides.indexOf(entry.target);
+                    this.updateDots();
+                }
+            });
+        }, { threshold: 0.55 });
+        this.slides.forEach((s) => io.observe(s));
+    }
+
+    goTo(i) {
+        const idx = Math.max(0, Math.min(this.slides.length - 1, i));
+        this.slides[idx].scrollIntoView({ behavior: 'smooth' });
+    }
+
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            if (e.target.getAttribute && e.target.getAttribute('contenteditable')) return;
+            if (['ArrowDown', 'ArrowRight', ' ', 'PageDown'].includes(e.key)) {
+                e.preventDefault(); this.goTo(this.current + 1);
+            } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
+                e.preventDefault(); this.goTo(this.current - 1);
+            } else if (e.key === 'Home') { this.goTo(0); }
+            else if (e.key === 'End') { this.goTo(this.slides.length - 1); }
+        });
+    }
+
+    setupTouchNav() {
+        let startY = null;
+        document.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: true });
+        document.addEventListener('touchend', (e) => {
+            if (startY === null) return;
+            const dy = startY - e.changedTouches[0].clientY;
+            if (Math.abs(dy) > 60) this.goTo(this.current + (dy > 0 ? 1 : -1));
+            startY = null;
+        }, { passive: true });
+    }
+
+    setupProgressBar() {
+        const bar = document.querySelector('.progress-bar');
+        document.addEventListener('scroll', () => {
+            const max = document.documentElement.scrollHeight - window.innerHeight;
+            bar.style.width = `${(window.scrollY / max) * 100}%`;
+        }, { passive: true });
+    }
+
+    setupNavDots() {
+        const nav = document.querySelector('.nav-dots');
+        this.dots = this.slides.map((_, i) => {
+            const b = document.createElement('button');
+            b.setAttribute('aria-label', `Go to slide ${i + 1}`);
+            b.addEventListener('click', () => this.goTo(i));
+            nav.appendChild(b);
+            return b;
+        });
+        this.updateDots();
+    }
+
+    updateDots() {
+        if (!this.dots) return;
+        this.dots.forEach((d, i) => d.classList.toggle('active', i === this.current));
+    }
+}
+
+/* ===========================================
+   INLINE EDITOR (opt-in)
+   Click ✏️ (hover top-left) or press E.
+   Edits autosave to localStorage; export
+   downloads a standalone edited copy.
+   =========================================== */
+class InlineEditor {
+    constructor() {
+        this.KEY = 'deck-flow-foundations-v8'; /* bumped: built-in methods slide insertion shifted editable indices */
+        this.isActive = false;
+        this.editables = Array.from(document.querySelectorAll('[data-ed]'));
+        this.editables.forEach((el, i) => el.dataset.edId = i);
+        this.restore();
+        this.bindControls();
+    }
+
+    restore() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(this.KEY) || '{}');
+            this.editables.forEach((el) => {
+                if (saved[el.dataset.edId] !== undefined) el.innerHTML = saved[el.dataset.edId];
+            });
+        } catch { /* corrupt save — ignore */ }
+    }
+
+    save() {
+        const out = {};
+        this.editables.forEach((el) => { out[el.dataset.edId] = el.innerHTML; });
+        localStorage.setItem(this.KEY, JSON.stringify(out));
+    }
+
+    toggleEditMode() {
+        this.isActive = !this.isActive;
+        document.body.classList.toggle('editing', this.isActive);
+        document.getElementById('editToggle').classList.toggle('active', this.isActive);
+        document.getElementById('editBadge').classList.toggle('show', this.isActive);
+        this.editables.forEach((el) => {
+            if (this.isActive) el.setAttribute('contenteditable', 'true');
+            else el.removeAttribute('contenteditable');
+        });
+        if (!this.isActive) this.save();
+    }
+
+    export() {
+        this.save();
+        const clone = document.documentElement.cloneNode(true);
+        clone.querySelectorAll('[contenteditable]').forEach((el) => el.removeAttribute('contenteditable'));
+        clone.querySelector('body').classList.remove('editing');
+        const blob = new Blob(['<!DOCTYPE html>\n' + clone.outerHTML], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'flow-foundations-deck.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    reset() {
+        localStorage.removeItem(this.KEY);
+        location.reload();
+    }
+
+    bindControls() {
+        const toggle = document.getElementById('editToggle');
+        const hotzone = document.querySelector('.edit-hotzone');
+        let hideTimeout = null;
+
+        toggle.addEventListener('click', () => this.toggleEditMode());
+        hotzone.addEventListener('click', () => this.toggleEditMode());
+
+        /* JS-driven hover with 400ms grace so the button stays reachable */
+        const scheduleHide = () => {
+            hideTimeout = setTimeout(() => {
+                if (!this.isActive) toggle.classList.remove('show');
+            }, 400);
+        };
+        hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); toggle.classList.add('show'); });
+        hotzone.addEventListener('mouseleave', scheduleHide);
+        toggle.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+        toggle.addEventListener('mouseleave', scheduleHide);
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'e' || e.key === 'E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable'))) {
+                this.toggleEditMode();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && this.isActive) {
+                e.preventDefault(); this.save();
+            }
+        });
+
+        /* Debounced autosave while typing */
+        let t = null;
+        document.addEventListener('input', (e) => {
+            if (!e.target.closest || !e.target.closest('[data-ed]')) return;
+            clearTimeout(t); t = setTimeout(() => this.save(), 600);
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => this.export());
+        document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+    }
+}
+
+const presentation = new SlidePresentation();
+const editor = new InlineEditor();
+</script>
+</body>
+</html>

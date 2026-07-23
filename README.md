@@ -35,6 +35,7 @@ API keys or network — if it prints a triage summary, the lab is ready.
 | 02 · extended (router + HITL) | `uv run python modules/02-triagex-flow/solution_extended.py --standard` (no keys) or without the flag (model key, interactive review) | Model key for the incident path |
 | 02 · deployable scaffold | `cd modules/02-triagex-flow/triagex_flow && crewai install && crewai run` | Model key + `CREWAI_PLATFORM_INTEGRATION_TOKEN` (GitHub connected in CrewAI AMP). Linear writes are opt-in: `LINEAR_API_KEY`, `LINEAR_TEAM`, `SYNC_TO_LINEAR=true` |
 | 03 · Conversational Routing | `cd modules/03-conversational-routing/permissioned_chat && crewai install && crewai run` — switch identity via `CHAT_PROFILE` (analyst/viewer/guest) | Model key. Firecrawl keyless tier is fine |
+| 04 · Self-Improving Triage (human_feedback + memory) | `cd modules/04-triagex-flow-imp/triagex_flow_imp && crewai install && crewai run` — pauses for your verdict; run twice to see `(N learned)` | Same as the module 02 scaffold; verdict memories live in `./storage` |
 
 Earlier modules covering tools+MCP, flow memory, and HITL outreach deployment
 are parked in [`archive/`](archive/) and can be revived per customer.
@@ -53,6 +54,7 @@ each deploys to CrewAI AMP as-is:
 
 - `modules/02-triagex-flow/triagex_flow/` — triage GitHub issues/PRs from a date range → Linear
 - `modules/03-conversational-routing/permissioned_chat/` — permission-aware conversational assistant
+- `modules/04-triagex-flow-imp/triagex_flow_imp/` — module 02 + human verification (`@human_feedback`) and learned urgency (`remember`/`recall`)
 
 Scaffolds are standalone projects: `crewai install` inside one creates its own
 venv (fast — uv hardlinks from cache). They are intentionally not part of the

@@ -8,7 +8,6 @@ __pycache__/
 *.sqlite
 *.sqlite3
 *.db
-*.html
 .crewai/
 storage/
 archive/
