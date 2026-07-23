@@ -26,6 +26,7 @@ from uuid import uuid4
 from crewai import Agent, Flow
 from crewai.experimental import ConversationConfig, ConversationState, RouterConfig
 from crewai.flow import listen
+from crewai.flow.persistence import persist
 from crewai.mcp import MCPServerHTTP
 from crewai.mcp.filters import create_static_tool_filter
 from dotenv import load_dotenv
@@ -37,7 +38,10 @@ LAB_MODEL = os.getenv("LAB_MODEL", "openai/gpt-5.4")
 FIRECRAWL_MCP_URL = os.getenv("FIRECRAWL_MCP_URL", "https://mcp.firecrawl.dev/v2/mcp").strip()
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "").strip()
 # `crewai run` cannot pass CLI flags, so the demo identity is env-driven.
-CHAT_PROFILE = os.getenv("CHAT_PROFILE", "viewer").strip()
+# CHAT_PROFILE = os.getenv("CHAT_PROFILE", "viewer").strip()
+CHAT_PROFILE ='viewer'
+# Reuse a session id to resume a persisted chat (empty = fresh session).
+CHAT_SESSION = os.getenv("CHAT_SESSION", "").strip()
 
 # Synthetic workshop profiles. In production this comes from your identity
 # provider; the Flow only ever sees the resolved permission set.
@@ -113,6 +117,7 @@ class PermissionState(ConversationState):
     profile_loaded: bool = False
 
 
+@persist()  # chats survive restarts: same session_id resumes history
 @ConversationConfig(
     llm=LAB_MODEL,
     # Intent comes from the docstring catalog: each route's description is the
@@ -137,14 +142,19 @@ class PermissionedChatFlow(Flow[PermissionState]):
     profile_name = CHAT_PROFILE  # synthetic workshop identity
 
     def ensure_profile(self) -> None:
-        """Session setup, akin to a @start step: resolve the profile once.
+        """Session setup — with resume-safe semantics.
 
-        Seeding a SYSTEM message (not an assistant one) is what makes the
-        built-in `converse` LLM profile-aware for generic turns.
+        Identity sticks to the SESSION: on the first turn it comes from the
+        configured profile; on a resumed session the persisted name wins.
+        Permissions are re-resolved EVERY turn — a resumed session must never
+        keep stale grants the profile has lost since. The system message
+        (which makes `converse` profile-aware) is seeded only once; it is
+        already part of the persisted history on resume.
         """
-        if not self.state.profile_loaded:
+        if not self.state.profile_name:
             self.state.profile_name = self.profile_name
-            self.state.permissions = sorted(load_profile(self.profile_name))
+        self.state.permissions = sorted(load_profile(self.state.profile_name))
+        if not self.state.profile_loaded:
             self.state.profile_loaded = True
             self.append_message(
                 "system",
@@ -224,10 +234,15 @@ class PermissionedChatFlow(Flow[PermissionState]):
 
 
 def kickoff() -> None:
-    """Local REPL used by `crewai run`; set CHAT_PROFILE in .env to switch identity."""
+    """Local REPL used by `crewai run`.
+
+    CHAT_PROFILE picks the identity; CHAT_SESSION resumes a persisted chat —
+    quit and rerun with the same value and the conversation continues.
+    """
     flow = PermissionedChatFlow()
     flow.profile_name = CHAT_PROFILE
     flow.chat(
+        session_id=CHAT_SESSION or None,
         prompt="You: ",
         assistant_prefix="Assistant: ",
         exit_commands=("exit", "quit"),
@@ -280,10 +295,16 @@ def main() -> None:
         default=CHAT_PROFILE,
         help="Synthetic identity to load at session start (sets the permission set).",
     )
+    parser.add_argument(
+        "--session",
+        default=CHAT_SESSION,
+        help="Session id to resume a persisted chat (omit for a fresh session).",
+    )
     args = parser.parse_args()
     flow = PermissionedChatFlow()
     flow.profile_name = args.profile
     flow.chat(
+        session_id=args.session or None,
         prompt="You: ",
         assistant_prefix="Assistant: ",
         exit_commands=("exit", "quit"),

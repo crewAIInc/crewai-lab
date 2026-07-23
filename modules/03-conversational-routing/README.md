@@ -65,6 +65,13 @@ Try the same two messages under each profile:
 1. `Research recent developments in agent orchestration frameworks.`
 2. `Fetch https://docs.crewai.com and summarize it.`
 
+## Persistence
+
+The flow carries `@persist()`: rerun with the same `--session` id and the
+conversation resumes across restarts. Permissions are re-resolved on every
+turn, so a resumed session never keeps grants its profile has lost — sessions
+resume; claims must not.
+
 ## Checkpoint
 
 No LLM call is needed to observe the routing change: `route_for()` is a pure

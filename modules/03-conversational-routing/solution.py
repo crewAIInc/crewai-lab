@@ -19,6 +19,7 @@ from typing import Any
 from crewai import Flow
 from crewai.experimental import ConversationConfig, ConversationState, RouterConfig
 from crewai.flow import listen
+from crewai.flow.persistence import persist
 from pydantic import Field
 
 from lab_utils.agents import build_page_fetch_agent, build_topic_research_agent
@@ -54,6 +55,7 @@ class PermissionState(ConversationState):
     profile_loaded: bool = False
 
 
+@persist()  # chats survive restarts: same session_id resumes history
 @ConversationConfig(
     llm=LAB_MODEL,
     # Intent comes from the docstring catalog: each route's description is the
@@ -78,14 +80,19 @@ class PermissionedChatFlow(Flow[PermissionState]):
     profile_name = "analyst"  # override before chat(); synthetic workshop identity
 
     def ensure_profile(self) -> None:
-        """Session setup, akin to a @start step: resolve the profile once.
+        """Session setup — with resume-safe semantics.
 
-        Seeding a SYSTEM message (not an assistant one) is what makes the
-        built-in `converse` LLM profile-aware for generic turns.
+        Identity sticks to the SESSION: on the first turn it comes from the
+        configured profile; on a resumed session the persisted name wins.
+        Permissions are re-resolved EVERY turn — a resumed session must never
+        keep stale grants the profile has lost since. The system message
+        (which makes `converse` profile-aware) is seeded only once; it is
+        already part of the persisted history on resume.
         """
-        if not self.state.profile_loaded:
+        if not self.state.profile_name:
             self.state.profile_name = self.profile_name
-            self.state.permissions = sorted(load_profile(self.profile_name))
+        self.state.permissions = sorted(load_profile(self.state.profile_name))
+        if not self.state.profile_loaded:
             self.state.profile_loaded = True
             self.append_message(
                 "system",
@@ -164,10 +171,11 @@ class PermissionedChatFlow(Flow[PermissionState]):
         return reply
 
 
-def chat(profile: str = "analyst") -> None:
+def chat(profile: str = "analyst", session: str = "") -> None:
     flow = PermissionedChatFlow()
     flow.profile_name = profile
     flow.chat(
+        session_id=session or None,  # same id after a restart resumes the chat
         prompt="You: ",
         assistant_prefix="Assistant: ",
         exit_commands=("exit", "quit"),
@@ -184,5 +192,10 @@ if __name__ == "__main__":
         default="analyst",
         help="Synthetic identity to load at session start (sets the permission set).",
     )
+    parser.add_argument(
+        "--session",
+        default="",
+        help="Session id to resume a persisted chat (omit for a fresh session).",
+    )
     args = parser.parse_args()
-    chat(profile=args.profile)
+    chat(profile=args.profile, session=args.session)

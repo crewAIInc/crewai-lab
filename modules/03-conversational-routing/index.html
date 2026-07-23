@@ -679,7 +679,8 @@ session_id = <span class="kw">str</span>(uuid4())
     flow.finalize_session_traces()   <span class="cm"># deferred batch spans all turns</span></pre>
         </div>
         <ul class="bullet-list reveal" data-ed style="margin-top: var(--content-gap); max-width: 44em;">
-            <li>Same <code class="chip">session_id</code> → same state; add <code class="chip">@persist</code> on a terminal step to resume sessions across process restarts.</li>
+            <li>This module ships with <code class="chip">@persist()</code>: quit, rerun with the same <code class="chip">--session</code> id (or <code class="chip">CHAT_SESSION</code>), and the chat resumes — history intact.</li>
+            <li><strong>Resume-safe claims:</strong> identity sticks to the session, but permissions are <strong>re-resolved every turn</strong> — a resumed session never keeps grants the profile has lost.</li>
             <li><code class="chip">defer_trace_finalization=True</code> keeps one trace batch open across turns — the <code class="chip">finally</code> closes it.</li>
             <li><code class="chip">chat()</code> (the REPL we demo with) handles all of this for you.</li>
         </ul>
@@ -777,7 +778,7 @@ class SlidePresentation {
    =========================================== */
 class InlineEditor {
     constructor() {
-        this.KEY = 'deck-conversational-flows-v5';
+        this.KEY = 'deck-conversational-flows-v6';
         this.isActive = false;
         this.editables = Array.from(document.querySelectorAll('[data-ed]'));
         this.editables.forEach((el, i) => el.dataset.edId = i);

@@ -22,6 +22,13 @@ The learning loop is deliberately conservative: memory only ever **proposes**
 confirms, and held proposals teach the flow what *isn't* urgent. Memory is
 context, not authority.
 
+Two demo-friendly relaxations versus module 02 (whose strict quality gate is
+its own lesson): the gate here only filters obvious noise (unknown kind,
+non-descriptive title, no problem statement), and when no label or precedent
+proposes anything, the newest accepted items are surfaced for the human
+urgency call anyway — the reviewer's verdict is exactly what seeds the memory
+loop, so the review step always has something to teach with.
+
 ## Setup
 
 Fill `.env`: a model key, `CREWAI_PLATFORM_INTEGRATION_TOKEN` (connect GitHub
