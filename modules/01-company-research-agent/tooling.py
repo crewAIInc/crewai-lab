@@ -10,7 +10,9 @@ load_dotenv()
 
 class ExampleCustomTool(BaseTool):
     name = "example_custom_tool"
-    description = "A custom tool that returns a canned response useful for demonstrating tool extension."
+    description = (
+        "A custom tool that returns a canned response useful for demonstrating tool extension."
+    )
 
     def _run(self, query: str) -> str:
         # Custom logic goes here; here we just return a simple message.
@@ -21,7 +23,10 @@ class ExampleCustomTool(BaseTool):
 agent =Agent(
     role="Company Research Agent",
     goal="Research the company and return a summary of the company",
-    backstory="You are a company research agent that can research the company and return a summary of the company",
+    backstory=(
+        "You are a company research agent that can research the company and return "
+        "a summary of the company"
+    ),
     tools=[SerperDevTool()],
     mcps=[
         build_firecrawl_mcp(
