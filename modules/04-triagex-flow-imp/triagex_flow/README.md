@@ -54,10 +54,3 @@ uv run run_with_trigger '{"owner": "crewAIInc", "repo": "crewAI", "since": "2026
 
 The `@start` step accepts `crewai_trigger_payload`, which is how AMP delivers
 trigger events (for example, a weekly schedule) to a deployed flow.
-
-## Next step
-
-Module 04 (`modules/04-triagex-flow-imp/`) builds on this exact flow: a
-`@human_feedback` gate verifies urgency before publishing, and
-`self.remember`/`self.recall` turn those human verdicts into learned
-precedent for future runs.
