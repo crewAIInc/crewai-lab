@@ -1,0 +1,24 @@
+[project]
+name = "permissioned_chat"
+version = "0.1.0"
+description = "Permission-aware conversational routing (deployable module 03 use case)"
+authors = [{ name = "CrewAI Workshop", email = "lorenze@crewai.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai==1.15.5",
+    "crewai-tools==1.15.5",
+    "python-dotenv>=1.1.0,<2",
+]
+
+[project.scripts]
+kickoff = "permissioned_chat.main:kickoff"
+run_crew = "permissioned_chat.main:kickoff"
+plot = "permissioned_chat.main:plot"
+run_with_trigger = "permissioned_chat.main:run_with_trigger"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "flow"
