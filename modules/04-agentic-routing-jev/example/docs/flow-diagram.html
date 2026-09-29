@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jev × CrewAI — return readiness flow</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b0d16;
+      color: #eff2f8;
+      --muted: #a9b0c4;
+      --line: #313849;
+      --panel: #171c29;
+      --panel-light: #1e2534;
+      --orange: #ff9873;
+      --mint: #81e0bc;
+      --violet: #c4a7ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    button { font: inherit; }
+    .page { max-width: 1440px; margin: auto; padding: clamp(24px, 4vw, 64px); }
+    .eyebrow, .mono, .card-label, .tag, .step-number, .footnote { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .eyebrow { color: var(--orange); font-size: 12px; letter-spacing: .17em; text-transform: uppercase; }
+    h1 { max-width: 870px; margin: 14px 0 12px; font-size: clamp(36px, 5vw, 67px); line-height: 1.03; letter-spacing: -.045em; }
+    .lede { max-width: 740px; color: var(--muted); font-size: clamp(16px, 1.6vw, 20px); line-height: 1.55; margin: 0 0 30px; }
+    .toolbar { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: space-between; padding: 16px 0 22px; border-top: 1px solid var(--line); }
+    .steps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .step, .control { color: var(--muted); background: #141925; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+    .step { padding: 10px 13px; min-width: 97px; text-align: left; }
+    .step:hover, .control:hover { border-color: #68748a; color: #fff; }
+    .step[aria-current="step"] { background: #342a30; border-color: var(--orange); color: #fff; }
+    .step-number { display: block; font-size: 11px; color: var(--orange); margin-bottom: 2px; }
+    .controls { display: flex; align-items: center; gap: 8px; }
+    .control { min-width: 76px; padding: 10px 13px; }
+    .control:focus-visible, .step:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
+    .progress { height: 3px; background: #273044; border-radius: 3px; overflow: hidden; margin-bottom: 18px; }
+    .progress span { display: block; width: 25%; height: 100%; background: linear-gradient(90deg, var(--orange), var(--mint)); transition: width .45s ease; }
+    .flow { display: grid; grid-template-columns: minmax(255px, 1fr) minmax(350px, 1.32fr) minmax(260px, 1fr); gap: 14px; align-items: stretch; }
+    .card { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: clamp(20px, 2vw, 28px); min-height: 420px; position: relative; }
+    .card::after { content: "→"; position: absolute; right: -20px; top: 47%; z-index: 2; color: var(--orange); font-size: 25px; line-height: 1; }
+    .card:last-child::after { content: none; }
+    .card-label { margin: 0 0 6px; color: var(--orange); font-size: 12px; letter-spacing: .11em; text-transform: uppercase; }
+    h2 { font-size: 25px; margin: 0 0 6px; letter-spacing: -.025em; }
+    .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; line-height: 1.5; }
+    .thread { display: grid; gap: 9px; }
+    .message { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: #8993a8; background: #141925; min-height: 56px; line-height: 1.35; font-size: 14px; }
+    .message::before { content: "CUSTOMER " attr(data-turn); display: block; color: #747f96; font: 10px ui-monospace, monospace; letter-spacing: .08em; margin-bottom: 5px; }
+    .message.current { color: #fff; border-color: var(--orange); background: #342a30; }
+    .message.current::before { color: var(--orange); }
+    .message.future { opacity: .32; }
+    .question-stack { display: grid; gap: 9px; }
+    .question { display: grid; grid-template-columns: 104px 1fr; align-items: center; gap: 12px; border: 1px solid var(--line); background: var(--panel-light); border-radius: 10px; padding: 14px; }
+    .question .name { font-size: 13px; color: var(--muted); }
+    .tag { display: inline-block; width: max-content; max-width: 100%; overflow-wrap: anywhere; color: var(--mint); background: #17342e; border: 1px solid #347260; border-radius: 6px; padding: 5px 8px; font-size: 13px; }
+    .tag.unresolved { color: var(--violet); background: #2d2543; border-color: #675489; }
+    .gate { margin-top: 16px; padding: 15px 16px; border: 1px solid #587966; border-radius: 10px; background: #1c2c28; }
+    .gate.clarify { border-color: #756296; background: #2b243c; }
+    .gate .name { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; }
+    .gate strong { font-size: 17px; }
+    .gate p { margin: 6px 0 0; color: #b8c0ce; font-size: 13px; line-height: 1.4; }
+    .routes { display: grid; gap: 9px; }
+    .route { border: 1px solid var(--line); border-radius: 9px; padding: 13px 14px; display: flex; justify-content: space-between; gap: 12px; color: #8f99ad; background: #141925; }
+    .route .mono { font-size: 13px; }
+    .route.active { border-color: var(--orange); background: #342a30; color: #fff; }
+    .route.active::after { content: "RUNS"; font: 10px ui-monospace, monospace; letter-spacing: .1em; color: var(--orange); }
+    .reply { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); color: #dbe2ec; line-height: 1.5; font-size: 14px; }
+    .reply span { display: block; color: var(--muted); font: 11px ui-monospace, monospace; letter-spacing: .08em; margin-bottom: 7px; }
+    .caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; color: var(--muted); font-size: 13px; line-height: 1.5; border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; }
+    .caption strong { color: #e8ebf3; font-weight: 500; }
+    .bump { animation: bump .5s both; }
+    @keyframes bump { from { opacity: .45; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 1040px) { .flow { grid-template-columns: 1fr 1fr; } .card:last-child { grid-column: 1 / -1; min-height: 0; } .card:nth-child(2)::after { content: "↓"; left: 50%; right: auto; top: auto; bottom: -25px; transform: translateX(-50%); } }
+    @media (max-width: 680px) { .page { padding: 22px 16px 32px; } .flow { grid-template-columns: 1fr; } .card { min-height: 0; } .card::after { content: "↓"; left: 50%; right: auto; top: auto; bottom: -25px; transform: translateX(-50%); } .card:nth-child(2)::after { content: "↓"; } .step { min-width: 65px; } .step-number { display: none; } .question { grid-template-columns: 90px 1fr; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="eyebrow">CrewAI conversational flow / TypeSafe Jev</div>
+    <h1>One conversation.<br>Four routing decisions.</h1>
+    <p class="lede">Watch Jev classify the turn and identify the order item. A small rule decides whether CrewAI can use the return handler or needs to ask a question.</p>
+    <div class="toolbar">
+      <nav class="steps" aria-label="Conversation turns">
+        <button class="step" type="button" data-step="0"><span class="step-number">01 / 04</span>Track</button>
+        <button class="step" type="button" data-step="1"><span class="step-number">02 / 04</span>Return</button>
+        <button class="step" type="button" data-step="2"><span class="step-number">03 / 04</span>Clarify</button>
+        <button class="step" type="button" data-step="3"><span class="step-number">04 / 04</span>Resume</button>
+      </nav>
+      <div class="controls">
+        <button class="control" type="button" id="previous" aria-label="Previous turn">← Prev</button>
+        <button class="control" type="button" id="play" aria-label="Pause animation" aria-pressed="true">Pause</button>
+        <button class="control" type="button" id="next" aria-label="Next turn">Next →</button>
+      </div>
+    </div>
+    <div class="progress" aria-hidden="true"><span id="progress"></span></div>
+    <section class="flow" aria-label="Illustrative routing diagram">
+      <div class="card" id="conversation-card">
+        <p class="card-label">01 / Conversation</p>
+        <h2>Same session</h2>
+        <p class="sub">CrewAI adds each message to history before asking for a route.</p>
+        <div class="thread" id="thread"></div>
+      </div>
+      <div class="card" id="jev-card">
+        <p class="card-label">02 / One Jev call</p>
+        <h2>Three bounded questions</h2>
+        <p class="sub">The conversation and order are shared state. Each answer is read separately; Noul returns a 0–1 score.</p>
+        <div class="question-stack">
+          <div class="question"><span class="name">Route · Choice</span><span class="tag" id="intent"></span></div>
+          <div class="question"><span class="name">Item request · Noul</span><span class="tag" id="action"></span></div>
+          <div class="question"><span class="name">Item · Choice</span><span class="tag" id="item"></span></div>
+        </div>
+        <div class="gate" id="gate"><div class="name">Application rule · route confidence &lt; 0.5 → clarify; item request ≥ 0.5 and (item confidence &lt; 0.6 or unresolved) → clarify</div><strong id="gate-title"></strong><p id="gate-reason"></p></div>
+      </div>
+      <div class="card" id="crewai-card">
+        <p class="card-label">03 / CrewAI dispatch</p>
+        <h2>One handler runs</h2>
+        <p class="sub">The final route is returned to CrewAI’s built-in <span class="mono">route_conversation</span>.</p>
+        <div class="routes">
+          <div class="route" data-route="order"><span>Order lookup</span><span class="mono">@listen("order")</span></div>
+          <div class="route" data-route="returns"><span>Return help</span><span class="mono">@listen("returns")</span></div>
+          <div class="route" data-route="clarify"><span>Ask for detail</span><span class="mono">@listen("clarify")</span></div>
+        </div>
+        <div class="reply"><span>SAMPLE RESPONSE</span><div id="reply"></div></div>
+      </div>
+    </section>
+    <div class="caption"><strong id="summary" aria-live="polite"></strong><span>Illustrative decisions, no API calls or live timings. No return is started. The built-in <span class="mono">converse</span> handler is not used.</span></div>
+  </main>
+  <script>
+    const turns = [
+      {message: "Where are my Studio headphones?", intent: "order", action: "0.04", item: "studio_headphones", final: "order", reason: "This is a delivery question; item-specific return gating does not apply.", reply: "I can check delivery for order #4021.", summary: "Turn 1 · A delivery question reaches the order handler."},
+      {message: "They arrived damaged. Can I return them?", intent: "returns", action: "0.96", item: "studio_headphones", final: "returns", reason: "History resolves “them” to the Studio Headphones.", reply: "I can help with that item's return. No return has been started.", summary: "Turn 2 · The same session resolves a pronoun and switches to return help."},
+      {message: "Can I return one of the other blue items too?", intent: "returns", action: "0.94", item: "unresolved", final: "clarify", reason: "Two other blue items fit. The application changes returns → clarify.", reply: "Which order item do you mean, and what would you like help with?", summary: "Turn 3 · Return intent is clear; the item is not, so CrewAI asks."},
+      {message: "I mean the Sport Earbuds.", intent: "returns", action: "0.91", item: "sport_earbuds", final: "returns", reason: "The follow-up identifies one item and preserves the return intent.", reply: "I can help with that item's return. No return has been started.", summary: "Turn 4 · Clarification identifies the item and return help resumes."}
+    ];
+    const stepButtons = [...document.querySelectorAll(".step")];
+    const routeCards = [...document.querySelectorAll(".route")];
+    const motionOK = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let index = 0;
+    let playing = motionOK;
+    let timer;
+
+    function render() {
+      const turn = turns[index];
+      document.getElementById("thread").replaceChildren(...turns.map((entry, i) => {
+        const node = document.createElement("div");
+        node.className = "message" + (i === index ? " current" : i > index ? " future" : "");
+        node.dataset.turn = String(i + 1).padStart(2, "0");
+        node.textContent = entry.message;
+        return node;
+      }));
+      document.getElementById("intent").textContent = turn.intent;
+      document.getElementById("action").textContent = turn.action;
+      const item = document.getElementById("item");
+      item.textContent = turn.item;
+      item.classList.toggle("unresolved", turn.item === "unresolved");
+      const gate = document.getElementById("gate");
+      gate.classList.toggle("clarify", turn.final === "clarify");
+      document.getElementById("gate-title").textContent = turn.final === "clarify" ? "Ask for clarification" : "Proceed to " + turn.final;
+      document.getElementById("gate-reason").textContent = turn.reason;
+      document.getElementById("reply").textContent = turn.reply;
+      document.getElementById("summary").textContent = turn.summary;
+      document.getElementById("progress").style.width = (index + 1) * 25 + "%";
+      stepButtons.forEach((button, i) => button.setAttribute("aria-current", i === index ? "step" : "false"));
+      routeCards.forEach(card => card.classList.toggle("active", card.dataset.route === turn.final));
+      for (const id of ["conversation-card", "jev-card", "crewai-card"]) {
+        const card = document.getElementById(id);
+        card.classList.remove("bump");
+        void card.offsetWidth;
+        card.classList.add("bump");
+      }
+    }
+    function schedule() {
+      clearInterval(timer);
+      if (playing) timer = setInterval(() => { index = (index + 1) % turns.length; render(); }, 4800);
+    }
+    function move(next) { index = (next + turns.length) % turns.length; render(); schedule(); }
+    stepButtons.forEach(button => button.addEventListener("click", () => move(Number(button.dataset.step))));
+    document.getElementById("previous").addEventListener("click", () => move(index - 1));
+    document.getElementById("next").addEventListener("click", () => move(index + 1));
+    document.getElementById("play").addEventListener("click", event => {
+      playing = !playing;
+      event.currentTarget.textContent = playing ? "Pause" : "Play";
+      event.currentTarget.setAttribute("aria-label", playing ? "Pause animation" : "Play animation");
+      event.currentTarget.setAttribute("aria-pressed", String(playing));
+      schedule();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "ArrowRight") move(index + 1);
+      if (event.key === "ArrowLeft") move(index - 1);
+    });
+    if (!motionOK) {
+      const play = document.getElementById("play");
+      play.textContent = "Play";
+      play.setAttribute("aria-label", "Play animation");
+      play.setAttribute("aria-pressed", "false");
+    }
+    render();
+    schedule();
+  </script>
+</body>
+</html>

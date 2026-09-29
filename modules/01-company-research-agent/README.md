@@ -1,5 +1,7 @@
 # Module 01 · Company Research Agent + MCP (5 minutes)
 
+[Section slides](deck.html) · [Workshop deck](../../index.html#slide-4) · [Speaker notes](../../speaker-notes.html#agent)
+
 ## Named use case
 
 **Company research agent** — gathers current public company data with one narrowly scoped MCP tool.
@@ -7,6 +9,8 @@
 ## Learning objective
 
 Create one bounded Agent, attach Firecrawl's `firecrawl_search` tool over Streamable HTTP, and request a validated `CompanyResearchBrief`.
+
+The starter runs the Agent inside a one-step `@start` Flow. That small wrapper is the application entry point; later modules add explicit routes and gates.
 
 ## Teach
 
@@ -45,5 +49,4 @@ The brief cites public URLs, distinguishes evidence from inference, and moves un
 
 ## Debrief
 
-An MCP-enabled Agent still is not the workflow. Triage, tenant authorization, memory, approvals, and the decision to expose more powerful tools remain Flow and application responsibilities. Module 05 places this Agent inside a conversational Flow and adds `firecrawl_scrape` plus local scoring.
-
+An MCP-enabled Agent still is not the whole workflow. Triage, authorization, memory, approvals, and any decision to expose more powerful tools remain Flow and application responsibilities. Module 02 adds state, branching, and review gates to a different use case.

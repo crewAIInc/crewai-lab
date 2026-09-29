@@ -5,8 +5,8 @@ description = "A progressive CrewAI lab of reusable, deployable agent use cases"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
 dependencies = [
-    "crewai==1.15.5",
-    "crewai-tools==1.15.5",
+    "crewai==1.15.23",
+    "crewai-tools==1.15.23",
     "python-dotenv>=1.1.0,<2",
 ]
 
@@ -39,6 +39,8 @@ packages = ["src/lab_utils"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# Module 04 carries a standalone copy of the upstream Jev example and its own lockfile.
+extend-exclude = ["modules/04-agentic-routing-jev/example"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

@@ -1,4 +1,4 @@
-# CrewAI Agent Use-Case Lab
+# Building Reliable Agentic Systems That Survive Production
 
 A hands-on CrewAI lab: progressive modules introduce Agents, Flows,
 Conversational Flows, MCP, tools, human review, and deployment. The use cases
@@ -6,14 +6,20 @@ are intentionally generic — triage, research, permissioned assistants — so t
 lab can be reused with any customer. All data is synthetic; nothing connects
 to production systems or sends email.
 
+**Workshop slides:** open [`index.html`](index.html) in a browser for the
+five-section deck; modules 01–04 carry their own decks, and module 04 has an
+interactive flow diagram.
+**Presenter notes:** open [`speaker-notes.html`](speaker-notes.html) for the
+five-section talk track, module outcomes, demo cues, and transitions.
+
 ## Prerequisites
 
-- **Python 3.10–3.13**
+- **Python 3.10–3.13** for the root lab; module 04 requires 3.11–3.13
 - **[`uv`](https://docs.astral.sh/uv/getting-started/installation/)** — installs and runs everything
 - **A model-provider API key** (e.g. `OPENAI_API_KEY`) matching the `LAB_MODEL` you set
 
-The repository pins **CrewAI 1.15.5** so every attendee is on the same API
-surface — Conversational Flows are experimental, so keep the pin.
+The root lab pins **CrewAI 1.15.23**. Module 04 is a standalone example also
+pinned to **CrewAI 1.15.23**; install it in its own environment using its lockfile.
 
 ## Setup (2 minutes)
 
@@ -26,7 +32,7 @@ uv run python modules/02-triagex-flow/solution_extended.py --standard
 That last command is the smoke test: a full deterministic flow run with no
 API keys or network — if it prints a triage summary, the lab is ready.
 
-## What each module needs
+## What each section needs
 
 | Module | Run it | Extra credentials |
 |---|---|---|
@@ -35,15 +41,18 @@ API keys or network — if it prints a triage summary, the lab is ready.
 | 02 · extended (router + HITL) | `uv run python modules/02-triagex-flow/solution_extended.py --standard` (no keys) or without the flag (model key, interactive review) | Model key for the incident path |
 | 02 · deployable scaffold | `cd modules/02-triagex-flow/triagex_flow && crewai install && crewai run` | Model key + `CREWAI_PLATFORM_INTEGRATION_TOKEN` (GitHub connected in CrewAI AMP). Linear writes are opt-in: `LINEAR_API_KEY`, `LINEAR_TEAM`, `SYNC_TO_LINEAR=true` |
 | 03 · Conversational Routing | `cd modules/03-conversational-routing/permissioned_chat && crewai install && crewai run` — switch identity via `CHAT_PROFILE` (analyst/viewer/guest) | Model key. Firecrawl keyless tier is fine |
-| 04 · Self-Improving Triage (human_feedback + memory) | `cd modules/04-triagex-flow-imp/triagex_flow_imp && crewai install && crewai run` — pauses for your verdict; run twice to see `(N learned)` | Same as the module 02 scaffold; verdict memories live in `./storage` |
+| [04 · Agentic Routing with Jev](modules/04-agentic-routing-jev/) | `cd modules/04-agentic-routing-jev/example && uv sync --locked && uv run --env-file ../../../.env python flow.py` — interactive live Jev chat | `TYPESAFE_API_KEY` in the root `.env` |
 
 Earlier modules covering tools+MCP, flow memory, and HITL outreach deployment
 are parked in [`archive/`](archive/) and can be revived per customer.
 
-Every module directory has a `README.md` (framing, exercise, checkpoint) and a
-`basic.py` with intentional TODOs. Modules 02 and 03 also ship slide decks —
-open `modules/02-triagex-flow/deck.html` and
-`modules/03-conversational-routing/index.html` in a browser.
+The hands-on module directories have a `README.md` (framing, exercise, checkpoint).
+Open the section decks for
+[Module 01](modules/01-company-research-agent/deck.html),
+[Module 02](modules/02-triagex-flow/deck.html),
+[Module 03](modules/03-conversational-routing/index.html), and
+[Module 04](modules/04-agentic-routing-jev/deck.html) in a browser. Module 04
+also has an [interactive four-turn diagram](modules/04-agentic-routing-jev/example/docs/flow-diagram.html).
 
 ## Deployable use cases
 
@@ -54,7 +63,14 @@ each deploys to CrewAI AMP as-is:
 
 - `modules/02-triagex-flow/triagex_flow/` — triage GitHub issues/PRs from a date range → Linear
 - `modules/03-conversational-routing/permissioned_chat/` — permission-aware conversational assistant
-- `modules/04-triagex-flow-imp/triagex_flow_imp/` — module 02 + human verification (`@human_feedback`) and learned urgency (`remember`/`recall`)
+
+The former Section 04 self-improving TriageX scaffold and slides remain in
+[`modules/04-triagex-flow-imp/`](modules/04-triagex-flow-imp/) for later use;
+they are hidden from the current workshop agenda.
+
+Module 04 copies the standalone [Jev support Flow example](modules/04-agentic-routing-jev/example/)
+with its own CrewAI version and lockfile. It is a runnable teaching example,
+not a `crewai run` deployment scaffold.
 
 Scaffolds are standalone projects: `crewai install` inside one creates its own
 venv (fast — uv hardlinks from cache). They are intentionally not part of the

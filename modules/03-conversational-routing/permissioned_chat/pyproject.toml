@@ -5,8 +5,8 @@ description = "Permission-aware conversational routing (deployable module 03 use
 authors = [{ name = "CrewAI Workshop", email = "lorenze@crewai.com" }]
 requires-python = ">=3.10,<3.14"
 dependencies = [
-    "crewai==1.15.5",
-    "crewai-tools==1.15.5",
+    "crewai==1.15.23",
+    "crewai-tools==1.15.23",
     "python-dotenv>=1.1.0,<2",
 ]
 
@@ -22,3 +22,4 @@ build-backend = "hatchling.build"
 
 [tool.crewai]
 type = "flow"
+project_id = "68d07489-8c81-4933-a0e4-84e3df660994"
