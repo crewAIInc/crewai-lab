@@ -50,6 +50,12 @@
     .slide::before { content: ""; position: absolute; inset: 64px 0 0; z-index: -1; pointer-events: none; background: linear-gradient(to right, transparent calc(50% - .5px), rgba(255,141,96,.055) 50%, transparent calc(50% + .5px)), repeating-linear-gradient(to bottom, transparent 0 74px, rgba(255,141,96,.035) 75px 76px); opacity: .7; }
     .slide:nth-of-type(2n)::before { background-position: 28px 0; }
     .content { width: 100%; max-width: 1420px; margin: 0 auto; }
+    .title-layout { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: clamp(30px, 5vw, 80px); align-items: center; }
+    .title-qr { display: grid; justify-items: start; gap: 10px; margin: 0; }
+    .title-qr .qr-image { display: block; padding: 13px; background: #fff; border-radius: 10px; }
+    .title-qr img { display: block; width: 204px; height: 204px; image-rendering: pixelated; }
+    .title-qr figcaption { color: var(--muted); font: .76rem/1.45 var(--mono); }
+    .title-qr figcaption a { display: block; overflow-wrap: anywhere; }
     .section-mark { display: inline-flex; align-items: center; gap: 13px; font: 700 .78rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: clamp(7px, 1.4vh, 15px); }
     .section-mark::before { content: ""; width: 33px; height: 2px; background: currentColor; }
     .slide-count { position: absolute; bottom: 25px; left: var(--pad); color: var(--muted); font-size: .76rem; }
@@ -161,6 +167,8 @@
     body.editing [data-ed]:focus { outline: 2px solid var(--accent); }
     @media (max-width: 900px) {
       .slide { padding-top: 110px; }
+      .title-layout { grid-template-columns: 1fr; gap: 20px; }
+      .title-qr img { width: 160px; height: 160px; }
       .split, .split.wide-left { grid-template-columns: 1fr; gap: 26px; }
       .control-chain { grid-template-columns: repeat(3, 1fr); }
       .control-chain div:not(:last-child)::after { display: none; }
@@ -229,9 +237,15 @@
   <nav class="bottom-nav" aria-label="Slide navigation"><button id="prev" type="button" aria-label="Previous slide">←</button><button id="next" type="button" aria-label="Next slide">→</button></nav>
 
   <section class="slide" id="slide-1" aria-label="Title">
-    <div class="content">
-      <div class="section-mark reveal">Conference lab / five sections</div>
-      <h1 class="reveal" data-ed>Building Reliable Agentic Systems That Survive Production</h1>
+    <div class="content title-layout">
+      <div>
+        <div class="section-mark reveal">Conference lab</div>
+        <h1 class="reveal" data-ed>Building Reliable Agentic Systems That Survive Production</h1>
+      </div>
+      <figure class="title-qr reveal">
+        <a class="qr-image" href="https://github.com/crewAIInc/crewai-lab" aria-label="Open the CrewAI lab repository"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAAnCAYAAACMo1E1AAAAAXNSR0IArs4c6QAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAJ6ADAAQAAAABAAAAJwAAAAAd/OCSAAADQElEQVRYCc3U21LjQAwE0M0W///LrNtwTFuZCewbU0U06psUJ+Txfpw/v/S8Za/H47Fdz+7R5N41Jph7amvwuxr96kR/LhcyzTy9NN4QntZYauboZehldJ+7zGu5BnPvIOJXOI62F+03RJfq8KTvubfliHe1h3SIRdTv/N/p+H+0XC/F6N32kuF6ME1wGVMfbnduy31nNIwuvWW6Gmah7t27ymss92s5g6cgfQ82UGD3O53syctezTy5I/z533SnPnCDSCynT21MfC9G057V/e8EE2KB3d3A6e1+p9nhPUvO9mONWFDfGXc1nuhfHbnR0PL1rHO5Bjq08Xmnm3h6x8BeBkdHE5xO5tOTI2ixwNQOhcPSt7/71RLhedX2X9+5gB0QMcMcsgt95ZdBkzrPxK4ntxsotBeFCV8N7EHx0vDC0rurvLflDOsAdxxjguYRrk5+1/ficoOdyzWZAAs0Dgu/G956ulRe/M5Pa8HrOxcipwM6hAGm/3B9vcYvI9VpPXyF0ae+/FgJhajB5wAL4fR0amdObHrO5Xpom3sQvCtfD3HHRZ+7we1fcXRnPV6uZ9+B4Inpm+97Bs7eQsH5YV3x/LcnB4xBSGMdhIfp54DwMqLB8+lpgtM9fecQETHA1HA5s28Mlzrx9J2Nbzz3p+UIvaM2zEB9NDn6udAH+/U6s3dv5FxuhorpkGBC8LDuc5e34+Wk9l0O/+13DkgUYw/oZVube3M8BstLbV/jfb/mHuJ3DYFBqyADVZ5VBi4V/1+Zh/hpuYQlZC4QfB4atXkLBZOH16c6U399rBFNoQAmNWG554+HtjlDWwPj7cxw0dI/jsv55AIQXuTn8MbdBel5DJ81up4x+dmf2uPl67lOxWffwQaw4SK1aO5TF8xpT7Dpozs/1pC7P8IOaMwSwSwMU1vvnrrKbPz6ERa8MhvSmgR3zze1NPS9EG569ddyAXZGwVMjpGtrG7c0rGcFs6ga7PpvTfOTE7O/1s9h4WAqnxpN7jnR0J3A8XJ7csBZExCjitf3gHCGNL/C8PHMjPS35QginmcG9TDa6adJba6z4p29vGs5QYhdFbSr8YVTV7m9bO40fPrzR/hM+oUv/wDle5uNQMEf/wAAAABJRU5ErkJggg==" alt="QR code for the CrewAI lab repository" width="204" height="204"></a>
+        <figcaption>Scan for the lab repo<a href="https://github.com/crewAIInc/crewai-lab">github.com/crewAIInc/crewai-lab</a></figcaption>
+      </figure>
     </div>
     <div class="slide-count"><b>01</b> / 13</div><div class="footer-note">→ next / ← previous</div>
   </section>
