@@ -1,0 +1,6 @@
+[project]
+name = "convo-flow-example-jev"
+version = "0.1.0"
+description = "CrewAI conversational routing with TypeSafe Jev"
+requires-python = ">=3.11,<3.14"
+dependencies = ["crewai==1.15.23"]

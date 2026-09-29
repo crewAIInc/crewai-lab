@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Module 01 · First Agent + Harness</title>
+  <style>
+    :root{--bg:#11100e;--panel:#1d1a16;--raised:#28221b;--line:#514136;--text:#faf4eb;--muted:#c4b6a7;--accent:#ff8d60;--pale:#ffc7a7;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--pad:clamp(24px,5.4vw,86px)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-snap-type:y proximity}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 var(--sans)}a{color:var(--pale);text-underline-offset:.2em}a:hover{color:#fff}a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button{font:inherit;cursor:pointer}h1,h2,h3,p{margin-top:0}h1,h2{letter-spacing:-.045em;line-height:1.06}h1{font-size:clamp(2.35rem,4.3vw,4.5rem);max-width:17ch}h2{font-size:clamp(1.8rem,3vw,3.15rem);max-width:28ch}h3{font-size:clamp(1.05rem,1.5vw,1.3rem)}p{color:var(--muted)}strong{color:var(--text)}code,pre,.eyebrow,.label,.count,.topbar,.tag,.step{font-family:var(--mono)}code{color:var(--pale);font-size:.94em}pre{margin:0;white-space:pre-wrap;word-break:break-word;font:clamp(.75rem,1.02vw,.96rem)/1.62 var(--mono)}.topbar{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:60px;padding:10px var(--pad);background:rgba(17,16,14,.96);border-bottom:1px solid var(--line);font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.topbar .brand{text-decoration:none;color:var(--text)}.topbar .brand span{color:var(--accent)}.topbar nav{display:flex;gap:clamp(12px,2vw,27px)}.topbar nav a{text-decoration:none;color:var(--muted)}.topbar nav a:hover{color:var(--text)}.slide{scroll-snap-align:start;position:relative;display:flex;align-items:center;min-height:100dvh;padding:calc(60px + clamp(26px,4vh,44px)) var(--pad) clamp(60px,7vh,75px);border-bottom:1px solid var(--line);overflow:hidden;isolation:isolate}.slide::before{content:"";position:absolute;inset:60px 0 0;z-index:-1;background-image:linear-gradient(rgba(255,141,96,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,141,96,.045) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(90deg,transparent,#000 35%,#000 80%,transparent)}.content{width:100%;max-width:1420px;margin:auto}.eyebrow{display:flex;align-items:center;gap:11px;margin-bottom:clamp(12px,2vh,22px);color:var(--accent);font-size:.77rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.eyebrow::before{content:"";width:31px;height:2px;background:currentColor}.lede{max-width:64ch;font-size:clamp(1rem,1.6vw,1.31rem);line-height:1.48}.accent{color:var(--accent)}.count{position:absolute;bottom:23px;left:var(--pad);font-size:.76rem;color:var(--muted)}.count strong{color:var(--text)}.hint{position:absolute;bottom:23px;right:var(--pad);font:.74rem var(--mono);color:var(--muted)}.board{position:relative;margin-top:clamp(20px,3.8vh,42px);padding:clamp(20px,3vw,40px);border:1px solid var(--line);border-radius:16px;background:radial-gradient(circle at 50% 40%,rgba(255,141,96,.1),transparent 60%),var(--panel)}.board::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background-image:linear-gradient(rgba(255,141,96,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,141,96,.045) 1px,transparent 1px);background-size:32px 32px}.board>*{position:relative}.board-title,.label{display:block;color:var(--accent);font:.75rem var(--mono);font-weight:800;letter-spacing:.1em;text-transform:uppercase}.board-title{margin-bottom:clamp(18px,3vh,32px)}.node{min-width:0;padding:clamp(16px,2vw,27px);border:1px solid var(--line);border-radius:11px;background:#171410}.node.hot{border-color:var(--accent);background:#32231b}.node strong{display:block;margin-top:12px;font-size:clamp(1rem,1.5vw,1.35rem);line-height:1.22}.node small{display:block;margin-top:8px;color:var(--muted);font-size:clamp(.75rem,1vw,.9rem);line-height:1.35}.arrow{align-self:center;text-align:center;color:var(--accent);font:800 clamp(1.2rem,2vw,1.8rem) var(--mono)}.flow{display:grid;grid-template-columns:minmax(0,1fr) 40px minmax(0,1.25fr) 40px minmax(0,1fr);gap:7px;align-items:stretch}.flow .node{display:flex;flex-direction:column;justify-content:center}.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.tag{padding:6px 10px;border:1px solid var(--line);border-radius:999px;color:var(--pale);font-size:.73rem}.takeaway{margin-top:clamp(17px,3vh,29px);padding-top:12px;border-top:2px solid var(--accent);max-width:73ch;color:var(--text);font-size:clamp(.9rem,1.25vw,1.08rem)}.takeaway .label{margin-bottom:6px}.takeaway p{margin:0;color:var(--text)}.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.94fr);gap:clamp(26px,5vw,80px);align-items:center}.stack{display:grid;gap:11px}.row{display:grid;grid-template-columns:56px minmax(0,1fr);gap:15px;align-items:baseline;padding:14px 0;border-top:1px solid var(--line)}.row .step{color:var(--accent);font-size:.78rem;font-weight:800}.row strong{display:block;font-size:clamp(1rem,1.4vw,1.2rem)}.row span:last-child{display:block;margin-top:3px;color:var(--muted);font-size:clamp(.78rem,1.06vw,.96rem)}.harness{display:grid;grid-template-columns:1fr 1fr;gap:11px}.harness .node{min-height:126px}.harness .node:last-child{grid-column:1/-1;min-height:0}.harness .node strong{font-size:clamp(.98rem,1.35vw,1.17rem)}.harness .node small{font-size:.84rem}.boundary{display:grid;grid-template-columns:minmax(0,1fr) 35px minmax(0,1fr);gap:8px;align-items:stretch}.boundary .node{min-height:175px}.permission{display:flex;align-items:center;gap:14px;padding:13px 15px;border:1px solid var(--line);border-radius:8px;margin-top:12px;color:var(--muted);font:clamp(.8rem,1vw,.94rem) var(--mono)}.permission.allowed{border-color:var(--accent);color:var(--text);background:#32231b}.permission b{display:inline-grid;place-items:center;width:26px;height:26px;border:1px solid currentColor;border-radius:50%;color:var(--accent)}.permission:not(.allowed) b{color:var(--muted)}.codebox{overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#0b0b09}.codebox .chrome{padding:11px 18px;border-bottom:1px solid var(--line);color:var(--muted);font:.75rem var(--mono)}.codebox pre{padding:clamp(16px,2vw,26px)}.codebox em{color:var(--accent);font-style:normal}.codebox .comment{color:#a69b8d}.callouts{display:grid;gap:10px}.callout{display:grid;grid-template-columns:35px 1fr;gap:10px;padding:13px 0;border-top:1px solid var(--line)}.callout b{color:var(--accent);font:.8rem var(--mono)}.callout strong{display:block;font-size:clamp(.92rem,1.2vw,1.06rem)}.callout span{display:block;color:var(--muted);font-size:clamp(.78rem,1vw,.9rem);margin-top:3px}.contract{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;overflow:hidden;border:1px solid var(--line);border-radius:11px;background:var(--line)}.contract div{padding:13px 17px;background:var(--panel)}.contract code{display:block;font-weight:700}.contract small{display:block;margin-top:5px;color:var(--muted);font-size:.82rem}.contract div:nth-child(5),.contract div:nth-child(6){background:#292119}.check{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:24px}.check .node{min-height:180px}.check .node strong{font-size:clamp(.95rem,1.35vw,1.15rem)}.command{margin-top:20px;padding:15px 19px;border:1px solid var(--line);border-radius:9px;background:#0b0b09;color:var(--text);font:clamp(.7rem,1vw,.92rem)/1.6 var(--mono);overflow-wrap:anywhere}.links{display:flex;gap:10px 20px;flex-wrap:wrap;margin-top:19px;font:.78rem var(--mono)}.controls{position:fixed;right:var(--pad);bottom:17px;z-index:12;display:flex;gap:6px}.controls button{width:38px;height:38px;border:1px solid var(--line);border-radius:8px;background:#24201b;color:var(--text)}.controls button:hover{border-color:var(--accent)}
+    .harness-map{position:relative;width:min(100%,1110px);height:clamp(390px,48vh,525px);margin:clamp(10px,2vh,22px) auto 0}
+    .harness-ring{position:absolute;left:50%;top:48%;width:clamp(275px,24vw,360px);aspect-ratio:1;transform:translate(-50%,-50%);border:5px dashed #787a7d;border-radius:50%}
+    .harness-core,.harness-pill{position:absolute;display:grid;place-items:center;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:15px;background:#f45a22;color:#fff;text-align:center;font:clamp(1.04rem,1.65vw,1.55rem)/1.1 var(--sans)}
+    .harness-core{left:50%;top:48%;min-width:95px;padding:10px 15px;font-size:1.1rem;font-weight:700}
+    .harness-pill{min-width:clamp(144px,13vw,190px);min-height:56px;padding:10px 17px;white-space:nowrap}
+    .harness-pill.prompt{left:50%;top:7%;min-width:220px}
+    .harness-pill.hooks{left:13%;top:29%}.harness-pill.guardrails{left:87%;top:29%}
+    .harness-pill.tools{left:13%;top:60%}.harness-pill.subagents{left:87%;top:60%}
+    .harness-pill.memory{left:12%;top:88%}.harness-pill.skills{left:37%;top:88%}.harness-pill.sandboxes{left:63%;top:88%}.harness-pill.context{left:88%;top:88%}
+    #slide-1 h1{margin-bottom:13px}#slide-1 .lede{margin-bottom:0}#slide-1 .harness-map{height:clamp(320px,39vh,440px);margin-top:8px}#slide-1 .takeaway{margin-top:4px}
+    @media(max-width:850px){.slide{padding-top:105px}.split{grid-template-columns:1fr}.flow{grid-template-columns:1fr 25px 1fr 25px 1fr}.boundary{grid-template-columns:1fr 28px 1fr}.check{grid-template-columns:1fr 1fr}.harness-ring{width:260px}.harness-pill{min-width:130px;font-size:.95rem}.harness-pill.prompt{min-width:180px}}
+    @media(max-width:620px){.topbar{position:absolute;align-items:flex-start}.topbar nav{flex-wrap:wrap;justify-content:flex-end}.topbar nav a:last-child{display:none}.slide{padding:112px var(--pad) 75px}.flow,.boundary{display:flex;flex-direction:column}.flow>* , .boundary>*{width:100%}.arrow{transform:rotate(90deg)}.harness,.contract,.check{grid-template-columns:1fr}.harness .node:last-child{grid-column:auto}.harness .node,.check .node,.boundary .node{min-height:0}.hint{display:none}.codebox pre{font-size:.72rem}.harness-map{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;height:auto;margin:24px 0}#slide-1 .harness-map{height:auto;margin:24px 0}.harness-ring{display:none}.harness-core,.harness-pill{position:static;transform:none;min-width:0!important;min-height:48px;width:100%;padding:9px;border-width:2px;border-radius:9px;font-size:.85rem;white-space:normal}.harness-core{grid-column:1/-1;background:#27211d;color:var(--text);border-color:var(--accent)}}
+    @media(max-height:700px) and (min-width:851px){.slide{padding-top:88px;padding-bottom:58px}.board{margin-top:18px}.node{padding:16px}.harness .node{min-height:100px}.check .node{min-height:145px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+    @media print{:root{color-scheme:light;--bg:#fff;--panel:#fff;--line:#999;--text:#111;--muted:#333;--accent:#a53e14;--pale:#842e0d}body{background:#fff}.topbar,.controls,.count,.hint{display:none}.slide{height:100vh;min-height:0;padding:30px 42px;break-after:page}.slide::before,.board::before{display:none}.node.hot,.permission.allowed,.contract div:nth-child(5),.contract div:nth-child(6){background:#f7f0eb}.codebox,.command{background:#fff;color:#111}.harness-pill,.harness-core{background:#b74618;color:#fff}}
+  </style>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="#slide-1">CrewAI <span>/</span> Module 01</a><nav aria-label="Module resources"><a href="../../index.html#slide-4">Workshop deck</a><a href="README.md">Exercise guide</a><a href="../../speaker-notes.html#agent">Speaker notes</a></nav></header>
+  <nav class="controls" aria-label="Slide controls"><button id="prev" type="button" aria-label="Previous slide">←</button><button id="next" type="button" aria-label="Next slide">→</button></nav>
+
+  <section class="slide" id="slide-1" aria-label="The first agent">
+    <div class="content">
+      <div class="eyebrow">Section 02 / code module 01</div>
+      <h1>First Agent + <span class="accent">Harness</span></h1>
+      <p class="lede">The LLM sits inside a harness of instructions, capabilities, and controls. We start by configuring a small, bounded part of that system.</p>
+      <div class="harness-map" role="img" aria-label="An LLM at the center of an agent harness, surrounded by system prompt, hooks, guardrails, tools, subagents, memory, skills, sandboxes, and context">
+        <div class="harness-ring" aria-hidden="true"></div>
+        <div class="harness-core">LLM</div>
+        <div class="harness-pill prompt">System Prompt</div>
+        <div class="harness-pill hooks">Hooks</div>
+        <div class="harness-pill guardrails">Guardrails</div>
+        <div class="harness-pill tools">Tools</div>
+        <div class="harness-pill subagents">Subagents</div>
+        <div class="harness-pill memory">Memory</div>
+        <div class="harness-pill skills">Skills</div>
+        <div class="harness-pill sandboxes">Sandboxes</div>
+        <div class="harness-pill context">Context</div>
+      </div>
+      <div class="takeaway"><span class="label">Module 01 focus</span><p>Set the Agent's job, expose only search through MCP, and require a typed research brief.</p></div>
+    </div>
+    <div class="count"><strong>01</strong> / 06</div><div class="hint">→ next / ← previous</div>
+  </section>
+
+  <section class="slide" id="slide-2" aria-label="Harness anatomy">
+    <div class="content split">
+      <div>
+        <div class="eyebrow">Agent harness</div>
+        <h2>Define the job before the model runs.</h2>
+        <p class="lede">The prompt is one part of the contract. The Agent configuration sets a stable purpose and capability boundary.</p>
+        <div class="stack">
+          <div class="row"><span class="step">01</span><div><strong>Role</strong><span>Who is doing the work? A company research specialist.</span></div></div>
+          <div class="row"><span class="step">02</span><div><strong>Goal</strong><span>What counts as success? Concise, sourced intelligence.</span></div></div>
+          <div class="row"><span class="step">03</span><div><strong>Backstory</strong><span>What stays true? Evidence over invention; unknowns stay visible.</span></div></div>
+        </div>
+      </div>
+      <div class="board" role="img" aria-label="Agent is surrounded by role, goal, backstory, allowed MCP tools, task at kickoff, and typed response">
+        <div class="board-title">Six boundaries around one Agent</div>
+        <div class="harness">
+          <div class="node"><span class="label">Identity</span><strong>Role</strong><small>Research analyst</small></div>
+          <div class="node"><span class="label">Success</span><strong>Goal</strong><small>Cited brief</small></div>
+          <div class="node"><span class="label">Standing rules</span><strong>Backstory</strong><small>Separate facts from inference</small></div>
+          <div class="node"><span class="label">Capability</span><strong>MCP allowlist</strong><small>Search only</small></div>
+          <div class="node hot"><span class="label">Per run</span><strong><code>kickoff(task, response_format=...)</code></strong><small>The current question and output schema are explicit.</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="count"><strong>02</strong> / 06</div>
+  </section>
+
+  <section class="slide" id="slide-3" aria-label="MCP capability boundary">
+    <div class="content split">
+      <div>
+        <div class="eyebrow">Tool access / Firecrawl MCP</div>
+        <h2>Expose the one capability the task needs.</h2>
+        <p class="lede">The lab connects to Firecrawl over Streamable HTTP. A static tool filter exposes <code>firecrawl_search</code> to this Agent.</p>
+        <div class="takeaway"><span class="label">Control point</span><p>The model may choose among exposed tools; application code decides which tools exist in its world.</p></div>
+      </div>
+      <div class="board">
+        <div class="board-title">Capability boundary</div>
+        <div class="boundary" role="img" aria-label="The Company Research Agent can call Firecrawl search through MCP; scrape, crawl, extract, and write actions are not exposed">
+          <div class="node hot"><span class="label">CrewAI Agent</span><strong>Company research</strong><small>One remote MCP connection. No write-capable integration.</small></div>
+          <div class="arrow">→</div>
+          <div class="node"><span class="label">Firecrawl MCP</span><strong>Filtered tool list</strong><small><code>allowed_tools=["firecrawl_search"]</code></small></div>
+        </div>
+        <div class="permission allowed"><b>✓</b><span><code>firecrawl_search</code> / available</span></div>
+        <div class="permission"><b>×</b><span>scrape · crawl · extract · page interaction / not exposed</span></div>
+        <div class="tags"><span class="tag">API key stays in an auth header</span><span class="tag">No credential in the task prompt</span></div>
+      </div>
+    </div>
+    <div class="count"><strong>03</strong> / 06</div>
+  </section>
+
+  <section class="slide" id="slide-4" aria-label="Starter code path">
+    <div class="content split">
+      <div>
+        <div class="eyebrow">Read the starter</div>
+        <h2>The Flow starts it. The Agent does the research.</h2>
+        <p class="lede">Module 01 uses a tiny <code>@start</code> Flow wrapper. It has one path today; Module 02 adds explicit state, branching, and review gates.</p>
+        <div class="callouts">
+          <div class="callout"><b>01</b><div><strong><code>CompanyResearchFlow().kickoff()</code></strong><span>Application entry point starts the run.</span></div></div>
+          <div class="callout"><b>02</b><div><strong><code>@start</code> creates the Agent</strong><span>Participants fill role, goal, and backstory.</span></div></div>
+          <div class="callout"><b>03</b><div><strong><code>Agent.kickoff(...)</code></strong><span>The specific question requests a typed brief.</span></div></div>
+        </div>
+      </div>
+      <div class="codebox" aria-label="Key lines from the Module 01 starter">
+        <div class="chrome">modules/01-company-research-agent/basic.py / abbreviated</div>
+        <pre><code><span class="comment">class CompanyResearchFlow(Flow):</span>
+    <em>@start()</em>
+    def research(self):
+        agent = Agent(
+            role="TODO: ...",
+            goal="TODO: ...",
+            backstory="TODO: ...",
+            mcps=[build_firecrawl_mcp(
+                allowed_tools=["firecrawl_search"]
+            )],
+        )
+        result = agent.kickoff(
+            "Research CrewAI ...",
+            response_format=<em>CompanyResearchBrief</em>,
+        )
+        return result.pydantic or result.raw</code></pre>
+      </div>
+    </div>
+    <div class="count"><strong>04</strong> / 06</div>
+  </section>
+
+  <section class="slide" id="slide-5" aria-label="Output contract">
+    <div class="content split">
+      <div>
+        <div class="eyebrow">The output contract</div>
+        <h2>A plausible paragraph is not the checkpoint.</h2>
+        <p class="lede">Request <code>CompanyResearchBrief</code> and inspect its evidence. The schema shapes the response; cited URLs and open questions make it reviewable.</p>
+        <div class="takeaway"><span class="label">Review question</span><p>Which claims can you trace to a public URL, and which claims must remain open questions?</p></div>
+      </div>
+      <div class="board">
+        <div class="board-title">CompanyResearchBrief / fields</div>
+        <div class="contract" aria-label="CompanyResearchBrief fields and their purpose">
+          <div><code>company_name</code><small>Subject identity</small></div>
+          <div><code>business_summary</code><small>Grounded overview</small></div>
+          <div><code>customer_signals[]</code><small>Observed customer evidence</small></div>
+          <div><code>risk_signals[]</code><small>Observed risks</small></div>
+          <div><code>sources[]</code><small>Public URLs to inspect</small></div>
+          <div><code>open_questions[]</code><small>Unsupported or unresolved facts</small></div>
+        </div>
+        <div class="tags"><span class="tag">Typed shape</span><span class="tag">Cited evidence</span><span class="tag">Visible uncertainty</span></div>
+      </div>
+    </div>
+    <div class="count"><strong>05</strong> / 06</div>
+  </section>
+
+  <section class="slide" id="slide-6" aria-label="Exercise and handoff">
+    <div class="content">
+      <div class="eyebrow">Exercise / checkpoint / handoff</div>
+      <h2>Build the boundary. Then test the brief.</h2>
+      <div class="check">
+        <div class="node"><span class="label">01 / Configure</span><strong>Fill the three TODOs</strong><small>Give the specialist a role, a sourced outcome, and evidence rules.</small></div>
+        <div class="node"><span class="label">02 / Inspect</span><strong>Find the MCP allowlist</strong><small>Confirm search is exposed; scrape and other tools are not.</small></div>
+        <div class="node hot"><span class="label">03 / Verify</span><strong>Review the typed result</strong><small>Check URLs, claims, and <code>open_questions</code>.</small></div>
+      </div>
+      <div class="command">uv run python modules/01-company-research-agent/basic.py<br>uv run python modules/01-company-research-agent/solution.py</div>
+      <div class="takeaway"><span class="label">Question for Module 02</span><p>Once a research result could trigger another action, who decides the next step and where can the run pause?</p></div>
+      <div class="links"><a href="README.md">Exercise guide</a><a href="basic.py">Starter code</a><a href="solution.py">Complete example</a><a href="../02-triagex-flow/deck.html">Next module deck →</a></div>
+    </div>
+    <div class="count"><strong>06</strong> / 06</div>
+  </section>
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    function currentIndex() {
+      return slides.reduce((best, slide, index) => Math.abs(slide.getBoundingClientRect().top) < Math.abs(slides[best].getBoundingClientRect().top) ? index : best, 0);
+    }
+    function move(amount) { slides[Math.max(0, Math.min(slides.length - 1, currentIndex() + amount))].scrollIntoView({behavior:'smooth'}); }
+    document.getElementById('prev').addEventListener('click', () => move(-1));
+    document.getElementById('next').addEventListener('click', () => move(1));
+    document.addEventListener('keydown', event => {
+      if (event.altKey || event.ctrlKey || event.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+      if (['ArrowRight','ArrowDown','PageDown',' '].includes(event.key)) { event.preventDefault(); move(1); }
+      if (['ArrowLeft','ArrowUp','PageUp'].includes(event.key)) { event.preventDefault(); move(-1); }
+    });
+  </script>
+</body>
+</html>

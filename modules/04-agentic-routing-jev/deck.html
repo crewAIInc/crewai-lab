@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Module 04 · Agentic Routing with Jev</title>
+  <style>
+    :root{--bg:#11100e;--panel:#1d1a16;--raised:#292119;--line:#514136;--text:#faf4eb;--muted:#c4b6a7;--accent:#ff8d60;--pale:#ffc7a7;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--pad:clamp(24px,5.4vw,86px)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-snap-type:y proximity}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 var(--sans)}a{color:var(--pale);text-underline-offset:.2em}a:hover{color:#fff}a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button{font:inherit;cursor:pointer}h1,h2,h3,p{margin-top:0}h1,h2{letter-spacing:-.045em;line-height:1.06}h1{font-size:clamp(2.5rem,4.5vw,4.6rem);max-width:18ch}h2{font-size:clamp(2rem,3.3vw,3.4rem);max-width:25ch}h3{font-size:clamp(1rem,1.4vw,1.25rem)}p{color:var(--muted)}strong{color:var(--text)}code,pre,.eyebrow,.label,.count,.topbar,.tag,.step{font-family:var(--mono)}code{color:var(--pale);font-size:.93em}pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:clamp(.75rem,1vw,.95rem)/1.6 var(--mono)}
+    .topbar{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:60px;padding:10px var(--pad);background:rgba(17,16,14,.96);border-bottom:1px solid var(--line);font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.topbar .brand{text-decoration:none;color:var(--text)}.topbar .brand span{color:var(--accent)}.topbar nav{display:flex;gap:clamp(12px,2vw,27px)}.topbar nav a{text-decoration:none;color:var(--muted)}.topbar nav a:hover{color:var(--text)}
+    .slide{scroll-snap-align:start;position:relative;display:flex;align-items:center;min-height:100dvh;padding:calc(60px + clamp(26px,4vh,44px)) var(--pad) clamp(60px,7vh,75px);border-bottom:1px solid var(--line);overflow:hidden;isolation:isolate}.slide::before{content:"";position:absolute;inset:60px 0 0;z-index:-1;background-image:linear-gradient(rgba(255,141,96,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,141,96,.045) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(90deg,transparent,#000 35%,#000 80%,transparent)}.content{width:100%;max-width:1420px;margin:auto}.eyebrow{display:flex;align-items:center;gap:11px;margin-bottom:clamp(12px,2vh,22px);color:var(--accent);font-size:.77rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.eyebrow::before{content:"";width:31px;height:2px;background:currentColor}.lede{max-width:67ch;font-size:clamp(1rem,1.6vw,1.31rem);line-height:1.48}.accent{color:var(--accent)}.count{position:absolute;bottom:23px;left:var(--pad);font-size:.76rem;color:var(--muted)}.count strong{color:var(--text)}.hint{position:absolute;bottom:23px;right:var(--pad);font:.74rem var(--mono);color:var(--muted)}.controls{position:fixed;right:var(--pad);bottom:17px;z-index:12;display:flex;gap:6px}.controls button{width:38px;height:38px;border:1px solid var(--line);border-radius:8px;background:#24201b;color:var(--text)}.controls button:hover{border-color:var(--accent)}
+    .board{margin-top:clamp(18px,3.6vh,36px);padding:clamp(20px,3vw,40px);border:1px solid var(--line);border-radius:16px;background:radial-gradient(circle at 50% 40%,rgba(255,141,96,.1),transparent 60%),var(--panel)}.board-title,.label{display:block;color:var(--accent);font:.75rem var(--mono);font-weight:800;letter-spacing:.1em;text-transform:uppercase}.board-title{margin-bottom:clamp(16px,2.7vh,28px)}.node{min-width:0;padding:clamp(16px,2vw,27px);border:1px solid var(--line);border-radius:11px;background:#171410}.node.hot{border-color:var(--accent);background:#32231b}.node strong{display:block;margin-top:11px;font-size:clamp(1rem,1.5vw,1.35rem);line-height:1.22}.node small{display:block;margin-top:8px;color:var(--muted);font-size:clamp(.76rem,1vw,.91rem);line-height:1.35}.arrow{align-self:center;text-align:center;color:var(--accent);font:800 clamp(1.2rem,2vw,1.8rem) var(--mono)}.pipeline{display:grid;grid-template-columns:1fr 30px 1.1fr 30px 1.1fr 30px 1fr;gap:7px;align-items:stretch}.pipeline .node{display:flex;flex-direction:column;justify-content:center;min-height:170px}.route-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:15px}.route-strip div{padding:13px 16px;border:1px solid var(--line);border-radius:9px;text-align:center;font:.84rem var(--mono)}.route-strip strong{display:block;color:var(--accent);margin-bottom:4px}.takeaway{margin-top:clamp(17px,3vh,29px);padding-top:12px;border-top:2px solid var(--accent);max-width:76ch;color:var(--text);font-size:clamp(.9rem,1.25vw,1.08rem)}.takeaway .label{margin-bottom:6px}.takeaway p{margin:0;color:var(--text)}
+    .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,80px);align-items:center}.question-list{display:grid;gap:11px;margin-top:28px}.question{display:grid;grid-template-columns:48px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--line)}.question .step{color:var(--accent);font-size:.8rem;font-weight:800}.question strong{display:block;font-size:clamp(1rem,1.4vw,1.2rem)}.question span:last-child{display:block;margin-top:4px;color:var(--muted);font-size:clamp(.8rem,1vw,.95rem)}.sample{border:1px solid var(--line);border-radius:12px;background:#0b0b09;overflow:hidden}.sample .chrome{padding:11px 18px;border-bottom:1px solid var(--line);color:var(--muted);font:.75rem var(--mono)}.sample pre{padding:clamp(18px,2vw,27px)}.sample .key{color:var(--accent)}.sample .comment{color:#a69b8d}.sample .value{color:#e7d4bf}.footnote{font-size:.84rem;margin:15px 0 0}.gate{display:grid;grid-template-columns:1fr 40px 1.15fr;gap:8px;align-items:center}.gate .node{min-height:180px}.checks{display:grid;gap:9px}.check{padding:14px 18px;border:1px solid var(--line);border-radius:9px;background:#171410}.check strong{display:block;font:700 clamp(.81rem,1.02vw,.97rem) var(--mono)}.check small{display:block;margin-top:6px;color:var(--muted);font-size:.83rem}.decision{display:grid;grid-template-columns:1fr 28px 1fr;gap:9px;margin-top:14px;align-items:center}.decision .node{min-height:125px}.decision .node strong{margin-top:7px}.decision .node.hot strong{color:var(--accent)}.route-table{width:100%;border-collapse:collapse;margin-top:clamp(20px,3vh,36px);font-size:clamp(.84rem,1.08vw,1.02rem)}.route-table th{text-align:left;color:var(--accent);font:.74rem var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:12px 14px;border-bottom:2px solid var(--accent)}.route-table td{padding:17px 14px;border-bottom:1px solid var(--line);vertical-align:top}.route-table tr.hot{background:#302219}.route-table tr.hot td:first-child{border-left:3px solid var(--accent)}.route-table q{color:var(--text)}.route-table .num{color:var(--accent);font:.83rem var(--mono)}.route-table .arrow-small{color:var(--accent);padding:0 8px}.route-table small{display:block;color:var(--muted);margin-top:4px}.caption{margin:12px 0 0;color:var(--muted);font-size:.84rem}.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:clamp(18px,3vh,32px)}.metric{padding:22px;border:1px solid var(--line);border-radius:11px;background:#171410}.metric strong{display:block;margin:9px 0 2px;font-size:clamp(2rem,3.7vw,3.4rem);letter-spacing:-.05em;line-height:1}.metric.hot{background:#32231b;border-color:var(--accent)}.metric small{display:block;color:var(--muted)}.metric .model{font:700 .78rem var(--mono);color:var(--accent)}.criteria{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}.criteria div{padding:15px 0;border-top:1px solid var(--line)}.criteria strong{display:block;font-size:clamp(.93rem,1.15vw,1.1rem)}.criteria small{display:block;margin-top:5px;color:var(--muted);font-size:.82rem}.command{padding:17px 19px;margin-top:18px;border:1px solid var(--line);border-radius:9px;background:#0b0b09;color:var(--text);font:clamp(.72rem,1vw,.93rem)/1.65 var(--mono);overflow-wrap:anywhere}.links{display:flex;gap:10px 20px;flex-wrap:wrap;margin-top:19px;font:.78rem var(--mono)}.exercise{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:24px}.exercise .node{min-height:175px}.exercise .node strong{font-size:clamp(.97rem,1.3vw,1.17rem)}
+    @media(max-width:1000px){.pipeline{grid-template-columns:1fr 22px 1fr}.pipeline .node{min-height:120px}}
+    @media(max-width:700px){.topbar{position:absolute;align-items:flex-start}.topbar nav{flex-wrap:wrap;justify-content:flex-end}.topbar nav a:last-child{display:none}.slide{padding:112px var(--pad) 78px}.split{grid-template-columns:1fr}.pipeline{display:flex;flex-direction:column}.pipeline .node{min-height:0}.pipeline .arrow{transform:rotate(90deg)}.gate,.decision{grid-template-columns:1fr}.gate .arrow,.decision .arrow{transform:rotate(90deg)}.route-strip,.metric-grid,.criteria,.exercise{grid-template-columns:1fr}.route-table{display:block;overflow-x:auto;white-space:nowrap}.route-table td,.route-table th{padding:12px}.hint{display:none}}
+    @media(max-height:700px) and (min-width:701px){.slide{padding-top:86px;padding-bottom:54px}.board{margin-top:16px;padding:20px}.pipeline .node{min-height:125px}.metric{padding:15px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+    @media print{:root{color-scheme:light;--bg:#fff;--panel:#fff;--line:#999;--text:#111;--muted:#333;--accent:#a53e14;--pale:#842e0d}body{background:#fff}.topbar,.controls,.count,.hint{display:none}.slide{height:100vh;min-height:0;padding:30px 42px;break-after:page}.slide::before{display:none}.node.hot,.metric.hot{background:#f7f0eb}.sample,.command{background:#fff;color:#111}}
+  </style>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="#slide-1">CrewAI <span>/</span> Module 04</a><nav aria-label="Module resources"><a href="../../index.html#slide-10">Workshop deck</a><a href="README.md">Exercise guide</a><a href="../../speaker-notes.html#jev">Speaker notes</a></nav></header>
+  <nav class="controls" aria-label="Slide controls"><button id="prev" type="button" aria-label="Previous slide">←</button><button id="next" type="button" aria-label="Next slide">→</button></nav>
+
+  <section class="slide" id="slide-1" aria-label="Agentic routing control flow">
+    <div class="content">
+      <div class="eyebrow">Section 05 / code module 04</div>
+      <h1>Agentic routing <span class="accent">with Jev</span></h1>
+      <p class="lede">A customer support conversation becomes a series of bounded decisions. Jev proposes; Python decides whether a handler may run.</p>
+      <div class="board">
+        <div class="board-title">One turn through the conversational Flow</div>
+        <div class="pipeline" role="img" aria-label="A customer turn joins session history and order, Jev returns three typed answers, Python validates and may abstain, and CrewAI dispatches a handler">
+          <div class="node"><span class="label">Conversation</span><strong>Turn + history + order</strong><small>One session across follow-ups</small></div><div class="arrow">→</div>
+          <div class="node hot"><span class="label">Jev / one request</span><strong>Three typed answers</strong><small>Route · item action · exact item</small></div><div class="arrow">→</div>
+          <div class="node"><span class="label">Application code</span><strong>Validate + abstain</strong><small>One final route leaves <code>route_turn()</code></small></div><div class="arrow">→</div>
+          <div class="node"><span class="label">CrewAI</span><strong><code>@listen</code> handler</strong><small>Read-only sample reply</small></div>
+        </div>
+        <div class="route-strip"><div><strong>order</strong>delivery help</div><div><strong>returns</strong>item-specific help</div><div><strong>clarify</strong>ask for missing information</div></div>
+      </div>
+      <div class="takeaway"><span class="label">Control point</span><p>Returning a route from <code>route_turn()</code> replaces the built-in intent classifier; CrewAI still owns history and handler dispatch.</p></div>
+    </div>
+    <div class="count"><strong>01</strong> / 06</div><div class="hint">→ next / ← previous</div>
+  </section>
+
+  <section class="slide" id="slide-2" aria-label="Three typed Jev questions">
+    <div class="content split">
+      <div>
+        <div class="eyebrow">The model's narrow job</div>
+        <h2>Ask three questions in one request.</h2>
+        <p class="lede">The latest turn and session history answer intent. The order supplies the finite item choices.</p>
+        <div class="question-list">
+          <div class="question"><span class="step">01</span><div><strong>What help is requested?</strong><span><code>choice</code> → <code>order</code>, <code>returns</code>, or <code>clarify</code></span></div></div>
+          <div class="question"><span class="step">02</span><div><strong>Is this about a particular item?</strong><span><code>noul</code> → a numeric yes/no answer</span></div></div>
+          <div class="question"><span class="step">03</span><div><strong>Which one item is identified?</strong><span><code>choice</code> → order item or <code>unresolved</code></span></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="sample" aria-label="Abbreviated Jev answer structure">
+          <div class="chrome">flow.py / decide() / abbreviated answer</div>
+          <pre><code>{
+  <span class="key">"route"</span>: {
+    "choice": <span class="value">"returns"</span>,
+    "confidence": 0.98
+  },
+  <span class="key">"item_action"</span>: {"noul": 0.95},
+  <span class="key">"item"</span>: {
+    "choice": <span class="value">"unresolved"</span>,
+    "confidence": 0.99
+  }
+}
+
+<span class="comment">// illustrative structure, not a live response</span></code></pre>
+        </div>
+        <p class="footnote">The raw answers stay in the recorded decision even when the application selects a different final route.</p>
+      </div>
+    </div>
+    <div class="count"><strong>02</strong> / 06</div>
+  </section>
+
+  <section class="slide" id="slide-3" aria-label="Abstention gate">
+    <div class="content">
+      <div class="eyebrow">The application's decision</div>
+      <h2>A clear intent may still need clarification.</h2>
+      <p class="lede">“Can I return one of the other blue items too?” expresses return intent, but the order contains two other blue items.</p>
+      <div class="board">
+        <div class="board-title">Before a handler runs</div>
+        <div class="gate">
+          <div class="node hot"><span class="label">Jev's answer</span><strong><code>returns</code> + item <code>unresolved</code></strong><small>The raw intent is retained for inspection.</small></div>
+          <div class="arrow">→</div>
+          <div class="checks">
+            <div class="check"><strong>Validate response shape</strong><small>Invalid choices or scores stop before dispatch.</small></div>
+            <div class="check"><strong>Route confidence &lt; 0.50?</strong><small>Ask instead of guessing the intent.</small></div>
+            <div class="check"><strong>Item-specific return with no clear item?</strong><small>Ask if unresolved or item confidence &lt; 0.60.</small></div>
+          </div>
+        </div>
+        <div class="decision"><div class="node"><span class="label">Raw route</span><strong><code>returns</code></strong></div><div class="arrow">→</div><div class="node hot"><span class="label">Final route</span><strong><code>clarify</code></strong><small>“Which order item do you mean?”</small></div></div>
+      </div>
+      <div class="takeaway"><span class="label">Design rule</span><p>Confidence thresholds are demo policies. They are not calibrated probabilities of correctness; test them on reviewed conversations.</p></div>
+    </div>
+    <div class="count"><strong>03</strong> / 06</div>
+  </section>
+
+  <section class="slide" id="slide-4" aria-label="Four-turn support journey">
+    <div class="content">
+      <div class="eyebrow">The authored support journey</div>
+      <h2>History changes what the next turn means.</h2>
+      <table class="route-table" aria-label="Four customer turns, expected raw route, and expected final route">
+        <thead><tr><th>Turn</th><th>Customer says</th><th>Raw → final route</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td class="num">01</td><td><q>Where are my Studio headphones?</q></td><td><code>order</code><span class="arrow-small">→</span><code>order</code></td><td>Delivery question</td></tr>
+          <tr><td class="num">02</td><td><q>They arrived damaged. Can I return them?</q></td><td><code>returns</code><span class="arrow-small">→</span><code>returns</code></td><td>History resolves “they”</td></tr>
+          <tr class="hot"><td class="num">03</td><td><q>Can I return one of the other blue items too?</q></td><td><code>returns</code><span class="arrow-small">→</span><code>clarify</code></td><td>Two blue items remain</td></tr>
+          <tr><td class="num">04</td><td><q>I mean the Sport Earbuds.</q></td><td><code>returns</code><span class="arrow-small">→</span><code>returns</code></td><td>Follow-up names one item</td></tr>
+        </tbody>
+      </table>
+      <p class="caption">This is the intended scenario, not a promise that every live model call takes the same path. A low-confidence route can safely become <code>clarify</code> on any turn.</p>
+      <div class="takeaway"><span class="label">Inspect turn three</span><p>The important record contains both Jev's <code>returns</code> answer and the application's <code>clarify</code> route.</p></div>
+      <div class="links"><a href="example/docs/flow-diagram.html">Interactive four-turn diagram</a><a href="example/flow.py">Read <code>route_turn()</code></a></div>
+    </div>
+    <div class="count"><strong>04</strong> / 06</div>
+  </section>
+
+  <section class="slide" id="slide-5" aria-label="Router evaluation">
+    <div class="content">
+      <div class="eyebrow">Evaluate the decision point</div>
+      <h2>Measure the answer and the override.</h2>
+      <p class="lede">One September 27 live pass over 31 authored return-readiness cases. All three reached 31/31 final routes after the application gate.</p>
+      <div class="metric-grid" role="group" aria-label="Median HTTP round-trip times in one live pass: Jev 163 milliseconds, GPT-6 Luna 924 milliseconds, GPT-6 Astra 1887 milliseconds">
+        <div class="metric hot"><span class="model">Jev 1.13.0</span><strong>163<span style="font-size:.48em"> ms</span></strong><small>median HTTP round trip</small></div>
+        <div class="metric"><span class="model">GPT-6 Luna</span><strong>924<span style="font-size:.48em"> ms</span></strong><small>median HTTP round trip</small></div>
+        <div class="metric"><span class="model">GPT-6 Astra</span><strong>1,887<span style="font-size:.48em"> ms</span></strong><small>median HTTP round trip</small></div>
+      </div>
+      <div class="criteria">
+        <div><strong>Raw labels</strong><small>Did the model choose the right route and item?</small></div>
+        <div><strong>Abstentions</strong><small>Was a missing item or uncertain answer caught?</small></div>
+        <div><strong>Final handler</strong><small>Which <code>@listen</code> method actually ran?</small></div>
+      </div>
+      <div class="takeaway"><span class="label">Limit of this result</span><p>The cases helped tune the demo. These numbers compare this authored set; they do not estimate production accuracy or rank general model quality.</p></div>
+      <div class="links"><a href="example/docs/support-evaluation.md">Evaluation details</a><a href="example/eval_cases.json">Authored cases</a></div>
+    </div>
+    <div class="count"><strong>05</strong> / 06</div>
+  </section>
+
+  <section class="slide" id="slide-6" aria-label="Run and inspect the module">
+    <div class="content">
+      <div class="eyebrow">Live demo / exercise / checkpoint</div>
+      <h2>Ask your own question. Trace its route.</h2>
+      <div class="exercise">
+        <div class="node"><span class="label">01 / Run</span><strong>Type at <code>You:</code></strong><small>The interactive chat keeps one session. Enter <code>exit</code> to stop.</small></div>
+        <div class="node"><span class="label">02 / Inspect</span><strong>Compare raw and final</strong><small>Read <code>answer.choice</code>, item, confidence, and selected route.</small></div>
+        <div class="node hot"><span class="label">03 / Explain</span><strong>Name the handler</strong><small>Show why <code>order</code>, <code>returns</code>, or <code>clarify</code> ran.</small></div>
+      </div>
+      <div class="command">cd modules/04-agentic-routing-jev/example<br>uv sync --locked<br>uv run --env-file ../../../.env python flow.py<br><span style="color:var(--muted)"># or add --demo for the scripted four-turn run</span></div>
+      <div class="takeaway"><span class="label">Checkpoint</span><p>Explain why “other blue items” reaches <code>clarify</code>, then show how naming the Sport Earbuds changes the next route. The handlers only return sample replies; no return is started.</p></div>
+      <div class="links"><a href="README.md">Module guide</a><a href="example/flow.py">Implementation</a><a href="example/smoke_check.py">CrewAI lifecycle check</a><a href="../../speaker-notes.html#jev">Presenter notes</a></div>
+    </div>
+    <div class="count"><strong>06</strong> / 06</div>
+  </section>
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    function currentIndex() {
+      return slides.reduce((best, slide, index) => Math.abs(slide.getBoundingClientRect().top) < Math.abs(slides[best].getBoundingClientRect().top) ? index : best, 0);
+    }
+    function move(amount) { slides[Math.max(0, Math.min(slides.length - 1, currentIndex() + amount))].scrollIntoView({behavior:'smooth'}); }
+    document.getElementById('prev').addEventListener('click', () => move(-1));
+    document.getElementById('next').addEventListener('click', () => move(1));
+    document.addEventListener('keydown', event => {
+      if (event.altKey || event.ctrlKey || event.metaKey || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+      if (['ArrowRight','ArrowDown','PageDown',' '].includes(event.key)) { event.preventDefault(); move(1); }
+      if (['ArrowLeft','ArrowUp','PageUp'].includes(event.key)) { event.preventDefault(); move(-1); }
+    });
+  </script>
+</body>
+</html>

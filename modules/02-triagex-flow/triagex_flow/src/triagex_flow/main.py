@@ -121,8 +121,8 @@ def assess_candidate(candidate: GitHubTriageCandidate) -> tuple[str, list[str]]:
         failures.append("item type could not be verified")
     if len(candidate.title.strip()) < 12:
         failures.append("title is too short to describe actionable work")
-    if len(candidate.body.strip()) < 80:
-        failures.append("description needs at least 80 characters of context")
+    # if len(candidate.body.strip()) < 80:
+    #     failures.append("description needs at least 80 characters of context")
     if not candidate.has_problem_statement:
         failures.append("no explicit problem statement")
     if not candidate.has_desired_outcome:
@@ -193,7 +193,7 @@ class TriageXFlow(Flow[RangeTriageState]):
 
     @start()
     def fetch_range(self, crewai_trigger_payload: dict | None = None) -> int:
-        # AMP triggers deliver the request as crewai_trigger_payload.
+        # AMP triggers deliver the request as crewai_trigger_payload. - ignore for demo
         if crewai_trigger_payload:
             self.state.owner = crewai_trigger_payload.get("owner", self.state.owner)
             self.state.repo = crewai_trigger_payload.get("repo", self.state.repo)

@@ -1,0 +1,48 @@
+{
+  "duration": 18,
+  "starts": [1, 6, 11],
+  "order": {
+    "id": "4021", "delivery": "Tuesday", "return_window_days": 30,
+    "items": ["Blue Studio Headphones", "Blue Sport Earbuds", "Blue Travel Speaker"]
+  },
+  "turns": [
+    {
+      "message": "Where are my Studio headphones?",
+      "route": "order",
+      "reply": "Your Blue Studio Headphones in order #4021 arrive Tuesday.",
+      "jevMs": 120, "llmMs": 1840, "tokens": 310, "llmTokens": 24,
+      "confidence": 0.97,
+      "probabilities": { "order": 0.99, "returns": 0.005, "clarify": 0.005 },
+      "beat": "Find the order",
+      "insight": "The delivery question selects the order handler."
+    },
+    {
+      "message": "They arrived damaged. Can I return them?",
+      "route": "returns",
+      "reply": "I can help with the Blue Studio Headphones return. No return has been started.",
+      "jevMs": 140, "llmMs": 2120, "tokens": 420, "llmTokens": 28,
+      "confidence": 0.92,
+      "probabilities": { "order": 0.01, "returns": 0.97, "clarify": 0.02 },
+      "beat": "Switch the route",
+      "insight": "“They” means the headphones. New intent, same session."
+    },
+    {
+      "message": "Can I return one of the other blue items too?",
+      "route": "clarify",
+      "reply": "Which blue item do you mean: the Sport Earbuds or the Travel Speaker?",
+      "jevMs": 160, "llmMs": 2240, "tokens": 530, "llmTokens": 30,
+      "confidence": 0.12,
+      "probabilities": { "order": 0.38, "returns": 0.22, "clarify": 0.40 },
+      "beat": "Clarify uncertainty",
+      "insight": "The return intent is clear, but the item is not. Ask before proceeding."
+    },
+    {
+      "message": "I mean the Sport Earbuds.",
+      "route": "returns",
+      "reply": "I can help with the Blue Sport Earbuds return. No return has been started.",
+      "tokens": 600,
+      "confidence": 0.91,
+      "probabilities": { "order": 0.01, "returns": 0.98, "clarify": 0.01 }
+    }
+  ]
+}

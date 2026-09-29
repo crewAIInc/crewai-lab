@@ -28,6 +28,13 @@ Try the same two messages under each profile:
 1. `Research recent developments in agent orchestration frameworks.`
 2. `Fetch https://docs.crewai.com and summarize this page.`
 
+Firecrawl's MCP schema also exposes optional Alexandria provider discovery.
+This lab uses ordinary web search and URL scraping: search with `sources` set
+to web and `domainTools=false`, then scrape with only `url` and
+`formats=['markdown']`. If an agent enables `domainTools` on a keyless
+connection, Firecrawl may return an Alexandria API key error even though the
+ordinary web tools are available.
+
 ## Persistence: quit and resume
 
 Chats are snapshotted via `@persist()` into `CREWAI_STORAGE_DIR`
