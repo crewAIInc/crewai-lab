@@ -62,15 +62,11 @@ The [support evaluation](docs/support-evaluation.md) compares Jev with GPT-6 Lun
 ```sh
 # Validate the dataset and scoring without API calls.
 python3 eval_router.py --check
-# Compare return readiness: requires TYPESAFE_API_KEY, OPENAI_API_KEY and GEMINI_API_KEY.
+# Compare return readiness: requires TYPESAFE_API_KEY and OPENAI_API_KEY.
 uv run --env-file .env --no-project python3 eval_router.py
-# Decision APIs only (Jev, OpenAI Decisions, Gemini Decision):
-uv run --env-file .env --no-project python3 eval_router.py --models jev openai-decisions gemini-decision
 # Jev only:
 uv run --env-file .env --no-project python3 eval_router.py --models jev
 ```
-
-`openai-decisions` (`POST /v1/decisions`, `gpt-6-luna`) and `gemini-decision` (`POST v1beta/decisions`, `gemini-decision-1`) receive the same three typed questions as Jev and pass through the same route and item gates. `openai-fast` and `openai-frontier` remain generative Responses API baselines without probabilities. Each provider defines `confidence` differently, so the evaluator applies the 0.50 and 0.60 floors to TypeSafe's published formula, `(p_max - 1/n) / (1 - 1/n)`, computed from each provider's probabilities; the provider's own value is saved as `provider_confidence`. Gemini has no conversation-history input, so every provider receives the order and messages as one JSON state. The Gemini rate in `MODELS` was read from a summarized pricing page; confirm it before publishing cost figures.
 
 The evaluator defaults to `return_readiness` and saves raw responses, usage, timings and scores under git-ignored `eval_results/`. These authored cases are a diagnostic; they cannot establish production accuracy.
 

@@ -16,30 +16,6 @@ One live request per case on September 27, 2026 produced:
 
 Jev also made 93/93 correct **final-route** decisions across three repeats of the 31 cases, with no request errors. Its raw item Choice still selected the Sport Earbuds for “the smaller one” three times even though the order had no size data; Choice confidence was low enough for the application's 0.60 abstention rule to ask for clarification. This threshold was selected after inspecting these synthetic cases, so the 93/93 result is a tuned replay, not an unbiased estimate of future accuracy. The new 0.50 route-confidence fallback would not change these scores: the lowest Jev route confidence in the 31-case pass was 0.93. That set does not test the new fallback. On this set, all three models hit the final-route ceiling; it supports a latency and estimated-cost comparison, not a quality ranking.
 
-The GPT-6 rows above are generative Responses API calls with structured output. They predate the OpenAI Decisions API.
-
-### Decision API comparison (November 11, 2026)
-
-`eval_router.py` also includes `openai-decisions` and `gemini-decision` backends. On November 11, 2026, all five models ran three repeats of the 31 cases, randomly interleaved, from one machine. The route and item floors were applied to TypeSafe's confidence formula, computed from each provider's probabilities.
-
-| Model | Correct final route | Item action | Raw item Choice | Median | p95 | Estimated USD / 1,000 calls |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Jev `jev-1.13.0` | 93/93 | 93/93 | 90/93 | 142 ms | 219 ms | $0.0308 |
-| OpenAI Decisions `gpt-6-luna` | 93/93 | 93/93 | 93/93 | 235 ms | 488 ms | $0.0667 |
-| Gemini Decision `gemini-decision-1` | 87/93 | 78/93 | 93/93 | 302 ms | 412 ms | $0.0482 |
-| GPT-6 Luna, Responses, reasoning `none` | 92/93 | 93/93 | 93/93 | 1,205 ms | 1,868 ms | $0.0552 |
-| GPT-6 Astra, Responses, reasoning `low` | 93/93 | 93/93 | 93/93 | 2,102 ms | 3,340 ms | $5.6814 |
-
-There were no request errors. Each decision provider gave identical answers across repeats.
-
-Gemini's six final-route misses come from two cases, readiness_13 (the demo's third turn) and readiness_29. Gemini chose `returns` and `unresolved` correctly. However, it answered the item-action question at 0.474 and 0.481, below the 0.50 cutoff, so the application did not ask for clarification. Gemini answered the item-action question below 0.50 on five ambiguous or injected cases (0.28 to 0.49). In three of them, a low route confidence or a raw `clarify` route still produced the correct final route. Its item-action answers on ambiguous cases ranged from 0.28 to 0.87, against 0.96 to 0.98 on clear-item cases. That suggests a different reading of "a particular item," not random noise.
-
-Jev's three raw item misses are the known "smaller one" case (readiness_19). The 0.60 item floor corrected them.
-
-OpenAI Decisions reported its own item confidence as exactly 1.0 on 57 of 93 answers. This set cannot show whether those values are calibrated.
-
-The floors were originally tuned on Jev. The Gemini rate is a summarized list price, not yet confirmed. These authored cases support a latency, cost, and failure-mode comparison, not a production quality ranking.
-
 ## Where Jev fits in a CrewAI flow
 
 **Turn-level decisions with a small set of answers are the demonstrated fit.** CrewAI's [conversational flow lifecycle](https://docs.crewai.com/en/guides/flows/conversational-flows) adds the user message to session history before routing, then dispatches the selected `@listen` handler. Here Jev reads that history and the order once, answers three [typed questions](https://docs.typesafe.ai/api), and the flow combines them into a handler route. This is useful when a follow-up changes intent or names an item indirectly, and when an unresolved reference should pause item-specific help. On our authored cases, Jev matched the frontier models' final routes with lower measured request latency and estimated cost; the fixture shows no quality advantage.
