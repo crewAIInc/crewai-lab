@@ -19,10 +19,51 @@ ROOT = Path(__file__).resolve().parent
 # USD / million tokens: input, cached input, output, cache writes. Sources in docs/support-evaluation.md.
 MODELS = {
     "jev": {"provider": "jev", "model": "jev-1.13.0", "key": "TYPESAFE_API_KEY", "rates": [0.042, 0.042, 0, 0.042]},
+    "jev-1.14": {"provider": "jev", "model": "jev-1.14.0", "key": "TYPESAFE_API_KEY", "rates": [0.042, 0.042, 0, 0.042]},
+    # Decision endpoints: typed questions in, probabilities out, output tokens not billed.
+    "openai-decisions": {"provider": "openai_decisions", "model": "gpt-6-luna", "key": "OPENAI_API_KEY", "rates": [0.10, 0.01, 0, 0.125]},
+    # Gemini rate read from a summarized pricing page; confirm before publishing cost figures.
+    "gemini-decision": {"provider": "gemini", "model": "gemini-decision-1", "key": "GEMINI_API_KEY", "rates": [0.10, 0.10, 0, 0.10]},
+    # Generative baselines: structured JSON from the Responses API, no probabilities.
     "openai-fast": {"provider": "openai", "model": "gpt-6-luna", "key": "OPENAI_API_KEY", "effort": "none", "rates": [0.10, 0.01, 0.50, 0.125]},
     "openai-frontier": {"provider": "openai", "model": "gpt-6-astra", "key": "OPENAI_API_KEY", "effort": "low", "rates": [10, 1, 50, 12.50]},
 }
+DEFAULT_MODELS = ["jev", "openai-decisions", "gemini-decision", "openai-fast", "openai-frontier"]
+DECISION_PROVIDERS = {"jev", "openai_decisions", "gemini"}
 ROUTE_CONFIDENCE_FLOOR = .5
+ITEM_CONFIDENCE_FLOOR = .6
+
+
+def normalized_confidence(probabilities):
+    """TypeSafe's published Choice confidence: (p_max - 1/n) / (1 - 1/n).
+
+    Providers define `confidence` differently (Gemini reports p_max; OpenAI does not
+    document its formula), so the shared floors are applied to this value for every
+    decision provider. Each provider's own value is kept as `provider_confidence`.
+    """
+    n = len(probabilities)
+    return (max(probabilities.values()) - 1 / n) / (1 - 1 / n)
+
+
+def decision_answers(config, raw):
+    """Normalize decision-provider answers to Jev's keyed shape."""
+    if config["provider"] == "openai_decisions":
+        answers = {}
+        for answer in raw["answers"]:
+            assert answer["type"] != "refusal", f"Provider refused question {answer.get('name')}"
+            if answer["type"] == "predicate":
+                answers[answer["name"]] = {"type": "noul", "noul": answer["probability"]}
+            else:
+                assert answer["type"] == "choice"
+                answers[answer["name"]] = {
+                    "type": "choice", "choice": answer["choice"],
+                    "probabilities": {p["value"]: p["probability"] for p in answer["probabilities"]},
+                    "provider_confidence": answer.get("confidence")}
+        return answers
+    answers = raw["answers"]
+    if config["provider"] == "gemini":
+        answers = {k: dict(v, provider_confidence=v.get("confidence")) for k, v in answers.items()}
+    return answers
 
 
 def validate_dataset(dataset):
@@ -64,6 +105,31 @@ def request_data(config, task, case):
             "model": config["model"], "state": state,
             "questions": questions,
         }
+    if config["provider"] == "gemini":
+        # Same keyed question shape as Jev. Gemini has no conversation-history input,
+        # so the state (order plus messages) is sent as one JSON text block.
+        questions = {"route": {"type": "choice", "instructions": task["instructions"], "criteria": task["criteria"]}}
+        if "item_question" in task:
+            questions["item_action"] = {"type": "noul", "instructions": task["action_question"]}
+            questions["item"] = {"type": "choice", "instructions": task["item_question"],
+                                 "criteria": task["item_criteria"]}
+        return "https://generativelanguage.googleapis.com/v1beta/decisions", {
+            "model": config["model"], "input": json.dumps(state, ensure_ascii=False), "questions": questions,
+        }
+    if config["provider"] == "openai_decisions":
+        # Ordered question list with explicit names. The input is the same JSON state the
+        # other providers receive; native message-item history is not exercised here.
+        def choices(criteria):
+            return [{"value": k, "description": v} for k, v in criteria.items()]
+        questions = [{"name": "route", "type": "choice", "instructions": task["instructions"],
+                      "choices": choices(task["criteria"])}]
+        if "item_question" in task:
+            questions.append({"name": "item_action", "type": "predicate", "instructions": task["action_question"]})
+            questions.append({"name": "item", "type": "choice", "instructions": task["item_question"],
+                              "choices": choices(task["item_criteria"])})
+        return "https://api.openai.com/v1/decisions", {
+            "model": config["model"], "input": json.dumps(state, ensure_ascii=False), "questions": questions,
+        }
     instructions = task["instructions"] + "\nAllowed routes and criteria:\n" + json.dumps(task["criteria"], ensure_ascii=False)
     if "item_question" in task:
         instructions += "\nAnswer item_action independently: " + task["action_question"]
@@ -81,9 +147,11 @@ def request_data(config, task, case):
 
 
 def parse_response(config, raw, criteria, item_criteria=None):
-    if config["provider"] == "jev":
-        answer = raw["answers"]["route"]
-        route, probabilities, confidence = answer["choice"], answer["probabilities"], answer["confidence"]
+    provider_confidences = {}
+    if config["provider"] in DECISION_PROVIDERS:
+        answers = decision_answers(config, raw)
+        answer = answers["route"]
+        route, probabilities = answer["choice"], answer["probabilities"]
         assert answer["type"] == "choice"
         assert set(probabilities) == set(criteria)
         assert all(type(v) in (int, float) and math.isfinite(v) and 0 <= v <= 1 for v in probabilities.values())
@@ -91,8 +159,14 @@ def parse_response(config, raw, criteria, item_criteria=None):
         tolerance = max(.001, min(.05, .0005 * len(probabilities)))
         assert abs(sum(probabilities.values()) - 1) <= tolerance
         assert probabilities[route] >= max(probabilities.values())
+        if config["provider"] == "jev":
+            confidence = answer["confidence"]
+        else:
+            confidence = normalized_confidence(probabilities)
+            provider_confidences["route"] = answer["provider_confidence"]
         assert type(confidence) in (int, float) and math.isfinite(confidence) and 0 <= confidence <= 1
         if item_criteria:
+            raw = {"answers": answers}
             action_answer = raw["answers"]["item_action"]
             item_action_score = action_answer["noul"]
             assert action_answer["type"] == "noul"
@@ -106,7 +180,11 @@ def parse_response(config, raw, criteria, item_criteria=None):
             assert all(type(v) in (int, float) and math.isfinite(v) and 0 <= v <= 1 for v in item_probabilities.values())
             assert abs(sum(item_probabilities.values()) - 1) <= .02
             assert item_probabilities[item] >= max(item_probabilities.values())
-            item_confidence = item_answer["confidence"]
+            if config["provider"] == "jev":
+                item_confidence = item_answer["confidence"]
+            else:
+                item_confidence = normalized_confidence(item_probabilities)
+                provider_confidences["item"] = item_answer["provider_confidence"]
             assert type(item_confidence) in (int, float) and math.isfinite(item_confidence) and 0 <= item_confidence <= 1
     else:
         assert raw["status"] == "completed", "Response did not complete"
@@ -122,17 +200,23 @@ def parse_response(config, raw, criteria, item_criteria=None):
     final_route = ("clarify" if confidence is not None and confidence < ROUTE_CONFIDENCE_FLOOR
                    and "clarify" in criteria else route)
     result = {"route": final_route, "probabilities": probabilities, "confidence": confidence}
+    if provider_confidences:
+        result["provider_confidence"] = provider_confidences
     if item_criteria:
-        low_item_confidence = config["provider"] == "jev" and item_confidence < .6
+        decision = config["provider"] in DECISION_PROVIDERS
+        low_item_confidence = decision and item_confidence < ITEM_CONFIDENCE_FLOOR
         result.update(raw_route=route, item_action=item_action, item=item,
                       route="clarify" if final_route == "returns" and item_action
                       and (item == "unresolved" or low_item_confidence) else final_route)
-        if config["provider"] == "jev":
-            result.update(item_action_score=item_action_score, item_confidence=item_answer["confidence"])
+        if decision:
+            result.update(item_action_score=item_action_score, item_confidence=item_confidence,
+                          item_probabilities=item_probabilities)
     return result
 
 
 def estimated_cost(config, usage):
+    if "total_input_tokens" in usage:  # Gemini Decisions usage shape.
+        usage = {"input_tokens": usage["total_input_tokens"], "output_tokens": usage.get("total_output_tokens", 0)}
     if type(usage.get("input_tokens")) is not int or type(usage.get("output_tokens")) is not int:
         return None
     cached = usage.get("input_tokens_details", {}).get("cached_tokens", 0)
@@ -143,9 +227,10 @@ def estimated_cost(config, usage):
 
 def call(config, task, case):
     url, payload = request_data(config, task, case)
-    request = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST", headers={
-        "Authorization": "Bearer " + os.environ[config["key"]], "Content-Type": "application/json",
-    })
+    auth = ({"x-goog-api-key": os.environ[config["key"]]} if config["provider"] == "gemini"
+            else {"Authorization": "Bearer " + os.environ[config["key"]]})
+    request = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST",
+                                     headers={**auth, "Content-Type": "application/json"})
     started = time.perf_counter()
     record = {"request_sha256": hashlib.sha256(request.data).hexdigest()}
     try:
@@ -286,12 +371,81 @@ def self_check(dataset):
     with patch.dict(os.environ, {"TYPESAFE_API_KEY": "mock-only"}), \
             patch("urllib.request.urlopen", side_effect=ConnectionResetError("reset")):
         assert call(cfg, dataset["tasks"][case["task"]], case)["error"] == "ConnectionResetError: reset"
-    print(f"PASS: {len(dataset['cases'])} cases; parsing, errors, confidence policy and cached cost checks. No API calls.")
+    decision_checks(dataset)
+    print(f"PASS: {len(dataset['cases'])} cases; parsing, errors, confidence policy, decision backends and cached cost checks. No API calls.")
+
+
+def decision_checks(dataset):
+    """Mocked Gemini Decision and OpenAI Decisions responses through the shared gates."""
+    from unittest.mock import MagicMock, patch
+
+    readiness = dataset["tasks"]["return_readiness"]
+    crit, items = readiness["criteria"], readiness["item_criteria"]
+    assert abs(normalized_confidence({"a": .8, "b": .15, "c": .05}) - .7) < 1e-9
+
+    def gemini(item, item_probs, route_probs=None):
+        route_probs = route_probs or {"order": .02, "returns": .96, "clarify": .02}
+        return {"answers": {
+            "route": {"type": "choice", "choice": max(route_probs, key=route_probs.get),
+                      "probabilities": route_probs, "confidence": max(route_probs.values())},
+            "item_action": {"type": "noul", "noul": .95, "confidence": .95},
+            "item": {"type": "choice", "choice": item, "probabilities": item_probs, "confidence": max(item_probs.values())},
+        }, "usage": {"total_input_tokens": 1000, "total_output_tokens": 0}}
+
+    def openai(item, item_probs):
+        return {"answers": [
+            {"type": "choice", "name": "route", "choice": "returns", "confidence": .9,
+             "probabilities": [{"value": "order", "probability": .02}, {"value": "returns", "probability": .96},
+                               {"value": "clarify", "probability": .02}]},
+            {"type": "predicate", "name": "item_action", "probability": .95},
+            {"type": "choice", "name": "item", "choice": item, "confidence": .9,
+             "probabilities": [{"value": k, "probability": v} for k, v in item_probs.items()]},
+        ], "usage": {"input_tokens": 1000, "output_tokens": 0}}
+
+    clear = dict.fromkeys(items, .02) | {"sport_earbuds": .94}
+    # p_max .62 over 4 options: Gemini reports .62, normalized confidence is ~.49 -> clarify.
+    split = {"studio_headphones": .02, "sport_earbuds": .62, "travel_speaker": .34, "unresolved": .02}
+    for key, build in (("gemini-decision", gemini), ("openai-decisions", openai)):
+        cfg = MODELS[key]
+        ok = parse_response(cfg, build("sport_earbuds", clear), crit, items)
+        assert ok["route"] == "returns" and ok["item"] == "sport_earbuds", key
+        assert ok["provider_confidence"]["item"] is not None, key
+        gated = parse_response(cfg, build("sport_earbuds", split), crit, items)
+        assert gated["route"] == "clarify" and gated["raw_route"] == "returns", key
+        assert gated["item_confidence"] < ITEM_CONFIDENCE_FLOOR, key
+    low_route = gemini("unresolved", dict.fromkeys(items, .25), {"order": .4, "returns": .35, "clarify": .25})
+    assert parse_response(MODELS["gemini-decision"], low_route, crit, items)["route"] == "clarify"
+    refusal = openai("sport_earbuds", clear)
+    refusal["answers"][2] = {"type": "refusal", "name": "item"}
+    try:
+        parse_response(MODELS["openai-decisions"], refusal, crit, items)
+        raise RuntimeError("Refusal accepted")
+    except AssertionError:
+        pass
+    assert estimated_cost(MODELS["gemini-decision"], {"total_input_tokens": 1000, "total_output_tokens": 0}) == .0001
+    assert estimated_cost(MODELS["openai-decisions"], {"input_tokens": 1000, "output_tokens": 0}) == .0001
+
+    case = next(c for c in dataset["cases"] if c["task"] == "return_readiness")
+    for key, build, url, header in (
+            ("gemini-decision", gemini, "https://generativelanguage.googleapis.com/v1beta/decisions", "X-goog-api-key"),
+            ("openai-decisions", openai, "https://api.openai.com/v1/decisions", "Authorization")):
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.read.return_value = json.dumps(build("sport_earbuds", clear)).encode()
+        with patch.dict(os.environ, {MODELS[key]["key"]: "mock-only"}), \
+                patch("urllib.request.urlopen", return_value=response) as opened:
+            record = call(MODELS[key], readiness, case)
+        sent = opened.call_args.args[0]
+        assert "error" not in record, (key, record.get("error"))
+        assert sent.full_url == url and sent.get_header(header), key
+        assert record["route"] == "returns" and record["estimated_cost_usd"] == .0001, key
+        body = json.loads(sent.data)
+        assert body["model"] == MODELS[key]["model"] and json.loads(body["input"])["messages"] == case["messages"], key
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--models", nargs="+", choices=MODELS, default=list(MODELS))
+    parser.add_argument("--models", nargs="+", choices=MODELS, default=DEFAULT_MODELS)
     parser.add_argument("--dataset", type=Path, default=ROOT / "eval_cases.json")
     parser.add_argument("--task", help="Task to evaluate; defaults to return_readiness when present, or use 'all'")
     parser.add_argument("--out", type=Path)
