@@ -32,7 +32,7 @@ The GPT-6 rows above are generative Responses API calls with structured output. 
 
 There were no request errors. Each decision provider gave identical answers across repeats.
 
-Gemini's six final-route misses come from two cases, readiness_13 (the demo's third turn) and readiness_29. Gemini chose `returns` and `unresolved` correctly. However, it answered the item-action question at 0.474 and 0.481, below the 0.50 cutoff, so the application did not ask for clarification. Its item-action answers on ambiguous cases ranged from 0.44 to 0.49. That suggests a different reading of "a particular item," not random noise.
+Gemini's six final-route misses come from two cases, readiness_13 (the demo's third turn) and readiness_29. Gemini chose `returns` and `unresolved` correctly. However, it answered the item-action question at 0.474 and 0.481, below the 0.50 cutoff, so the application did not ask for clarification. Gemini answered the item-action question below 0.50 on five ambiguous or injected cases (0.28 to 0.49). In three of them, a low route confidence or a raw `clarify` route still produced the correct final route. Its item-action answers on ambiguous cases ranged from 0.28 to 0.87, against 0.96 to 0.98 on clear-item cases. That suggests a different reading of "a particular item," not random noise.
 
 Jev's three raw item misses are the known "smaller one" case (readiness_19). The 0.60 item floor corrected them.
 
